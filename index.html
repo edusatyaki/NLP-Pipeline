@@ -200,6 +200,21 @@ footer b{color:var(--ink)}
 .gterm span{font-size:15px; color:var(--ink-3)}
 .gterm em{font-style:normal; color:var(--ink-2); background:var(--sheet-2); padding:0 4px; border-radius:2px}
 
+/* ---------- rules applied at this step ---------- */
+.rules{margin-top:18px; border-top:1px solid var(--rule); padding-top:14px}
+.rules h5{margin:0 0 5px; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-4); font-weight:700}
+.rules .rnote{font-size:14px; color:var(--ink-3); margin:0 0 11px; max-width:90ch}
+.rules table{font-size:13.5px; background:var(--paper)}
+.rules th{font-size:11px; padding:6px 10px}
+.rules td{padding:7px 10px; vertical-align:middle}
+.rules code{font-size:12px; white-space:normal; background:var(--sheet-2)}
+.rules tr.idle{opacity:.5}
+.rules .rn{color:var(--ink-4); font-variant-numeric:tabular-nums; width:26px}
+.rules .ryes{white-space:nowrap; text-transform:uppercase; font-size:11px; letter-spacing:.07em}
+.rules .off{color:var(--ink-4); font-weight:700}
+.rules .tk{font-size:12.5px; padding:1px 5px}
+.rules .tk u{font-size:8.5px}
+
 @media print{.top{position:static} .machine{break-inside:avoid}}
 </style>
 
@@ -269,6 +284,7 @@ footer b{color:var(--ink)}
       <div id="s-extra"></div>
       <div class="stat" id="s-stat"></div>
       <div class="m-note" id="s-note"></div>
+        <div id="s-rules"></div>
     </div>
   </div>
   <p class="hint">The taggers, lemmatizer and entity recogniser here are small teaching implementations — a lexicon plus suffix and capitalization rules — not NLTK or spaCy. They behave the way the real thing behaves on ordinary sentences, and they break in the same places, which is the point.</p>
@@ -923,6 +939,11 @@ nltk.download('wordnet')     <i># lemmatizer database</i></pre>
    Small teaching implementations. A lexicon plus suffix and
    capitalization rules — they behave like the real tools on ordinary
    sentences and break in the same places.
+
+   Every stage is written twice over: a plain function that returns the
+   answer, and a trace that says which rule produced it. The plain
+   function is defined in terms of the trace, so the two can never
+   disagree with each other.
    ===================================================================== */
 const $ = s => document.querySelector(s);
 const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -961,48 +982,116 @@ const PERSONS = new Set(['satyaki','das','sundar','pichai','jordan','john','ram'
 const PLACES  = new Set(['bengaluru','bangalore','india','delhi','mumbai','kolkata','chennai','paris','france','italy','rome','london','washington','york']);
 const ORGWORD = new Set(['school','university','college','institute','inc','ltd','limited','corp','tech','technologies','systems','labs','academy','bank']);
 
-function stripHtml(s){ return s.replace(/<[^>]*>/g,' '); }
-function expandContractions(s){
-  return s.replace(/\bwon't\b/gi,"will not").replace(/\bcan't\b/gi,"can not")
-          .replace(/n't\b/gi," not").replace(/'re\b/gi," are").replace(/'ve\b/gi," have")
-          .replace(/'ll\b/gi," will").replace(/'m\b/gi," am");
-}
-function normalize(raw, opt){
-  let s = stripHtml(raw).normalize('NFKC').replace(/\s+/g,' ').trim();
-  if(opt.contract) s = expandContractions(s);
-  if(opt.lower) s = s.toLowerCase();
-  return s;
-}
-function tokenize(s){
-  const re = /[A-Za-z]+(?:'[A-Za-z]+)?|\d[\d,.]*|[^\sA-Za-z0-9]/g;
-  const out = []; let m;
-  while((m = re.exec(s))){
-    const w = m[0], cl = w.toLowerCase().match(/^(.*?)(n't|'s|'re|'ve|'ll|'d|'m)$/);
-    if(cl && cl[1].length > 1){ out.push(w.slice(0, cl[1].length)); out.push(w.slice(cl[1].length)); }
-    else out.push(w);
+/* ---------------- stage 1 : normalization ---------------- */
+const CONTRACTIONS = [
+  [/\bwon't\b/gi, 'will not'], [/\bcan't\b/gi, 'can not'], [/n't\b/gi, ' not'],
+  [/'re\b/gi, ' are'], [/'ve\b/gi, ' have'], [/'ll\b/gi, ' will'], [/'m\b/gi, ' am']
+];
+function stripHtml(s){ return s.replace(/<[^>]*>/g, ' '); }
+function expandContractions(s){ return CONTRACTIONS.reduce((t, [re, rep]) => t.replace(re, rep), s); }
+
+function normalizeTrace(raw, opt){
+  const steps = [];
+  const step = (name, code, before, after, note) => {
+    steps.push({ name, code, fired: before !== after, before, after, note });
+    return after;
+  };
+  let s = raw;
+  s = step('Strip HTML tags', '/&lt;[^&gt;]*&gt;/g → " "', s, stripHtml(s), 'nothing that looks like a tag');
+  s = step('Unicode NFKC', "text.normalize('NFKC')", s, s.normalize('NFKC'), 'characters already in normal form');
+  s = step('Collapse whitespace', '/\\s+/g → " " then trim', s, s.replace(/\s+/g, ' ').trim(), 'no runs of spaces, tabs or newlines');
+  if(opt.contract){
+    CONTRACTIONS.forEach(([re, rep]) => {
+      const hits = s.match(new RegExp(re.source, 'gi')) || [];
+      const after = s.replace(re, rep);
+      steps.push({ name: 'Expand ' + re.source.replace(/\\b/g, '').replace(/\\/g, ''), code: String(re) + ' → "' + rep.trim() + '"',
+        fired: after !== s, before: s, after, hits, note: 'no match in this sentence' });
+      s = after;
+    });
+  } else {
+    steps.push({ name: 'Expand contractions', code: '7 substitution rules', fired: false, off: true,
+      note: 'switched off — tick the box to turn it on' });
   }
-  return out;
+  if(opt.lower){
+    const after = s.toLowerCase();
+    steps.push({ name: 'Lowercase', code: 'text.toLowerCase()', fired: after !== s, before: s, after,
+      note: 'nothing was capitalized', warn: true });
+    s = after;
+  } else {
+    steps.push({ name: 'Lowercase', code: 'text.toLowerCase()', fired: false, off: true,
+      note: 'held back on purpose — NER at stage 5 needs the capitals' });
+  }
+  return { out: s, steps };
 }
-const isPunct = t => /^[^A-Za-z0-9]+$/.test(t);
-function posTag(toks){
-  return toks.map((t, i) => {
-    if(isPunct(t)) return t.length === 1 ? t : 'SYM';
-    const l = t.toLowerCase();
-    if(LEX[l]) return LEX[l];
-    if(/^\d/.test(t)) return 'CD';
-    if(/^[A-Z]{2,}$/.test(t)) return 'NNP';
-    if(/^[A-Z]/.test(t) && i > 0) return 'NNP';
-    if(/ing$/.test(l)) return 'VBG';
-    if(/ed$/.test(l)) return 'VBD';
-    if(/ly$/.test(l)) return 'RB';
-    if(/(ous|ful|ive|able|al)$/.test(l)) return 'JJ';
-    if(/s$/.test(l) && !/ss$/.test(l)) return 'NNS';
-    if(/^[A-Z]/.test(t)) return 'NNP';
-    return 'NN';
+function normalize(raw, opt){ return normalizeTrace(raw, opt).out; }
+
+/* ---------------- stage 2 : tokenization ---------------- */
+const TOKEN_RE = /[A-Za-z]+(?:'[A-Za-z]+)?|\d[\d,.]*|[^\sA-Za-z0-9]/g;
+const CLITIC_RE = /^(.*?)(n't|'s|'re|'ve|'ll|'d|'m)$/;
+function tokenizeTrace(s){
+  const raw = s.match(TOKEN_RE) || [], toks = [], splits = [], punct = [], nums = [];
+  raw.forEach(w => {
+    const cl = w.toLowerCase().match(CLITIC_RE);
+    if(cl && cl[1].length > 1){
+      const a = w.slice(0, cl[1].length), b = w.slice(cl[1].length);
+      splits.push(w + ' → ' + a + ' + ' + b); toks.push(a, b);
+    } else {
+      if(/^[^A-Za-z0-9]+$/.test(w)) punct.push(w);
+      if(/^\d/.test(w)) nums.push(w);
+      toks.push(w);
+    }
   });
+  return { toks, splits, punct, nums, matched: raw.length };
 }
-/* NER — capitalization first, gazetteer second. Lowercase the text and it
-   collapses to nothing, which is exactly the point of section 11. */
+function tokenize(s){ return tokenizeTrace(s).toks; }
+const isPunct = t => /^[^A-Za-z0-9]+$/.test(t);
+
+/* ---------------- stage 3 : part-of-speech ---------------- */
+const POS_RULES = [
+  ['punctuation',   'a punctuation mark is its own tag'],
+  ['lexicon',       'look the word up in a list of ' + Object.keys(LEX).length + ' known words'],
+  ['digit',         'starts with a digit → CD'],
+  ['all-caps',      'two or more capitals → NNP'],
+  ['capitalized',   'capital letter, not the first word → NNP'],
+  ['-ing',          'ends in -ing → VBG'],
+  ['-ed',           'ends in -ed → VBD'],
+  ['-ly',           'ends in -ly → RB'],
+  ['adj suffix',    'ends in -ous / -ful / -ive / -able / -al → JJ'],
+  ['plural -s',     'ends in -s but not -ss → NNS'],
+  ['first word',    'capital letter at the start of the sentence → NNP'],
+  ['fallback',      'nothing else matched → NN']
+];
+function posTagOne(t, i){
+  if(isPunct(t)) return [t.length === 1 ? t : 'SYM', 'punctuation'];
+  const l = t.toLowerCase();
+  if(LEX[l]) return [LEX[l], 'lexicon'];
+  if(/^\d/.test(t)) return ['CD', 'digit'];
+  if(/^[A-Z]{2,}$/.test(t)) return ['NNP', 'all-caps'];
+  if(/^[A-Z]/.test(t) && i > 0) return ['NNP', 'capitalized'];
+  if(/ing$/.test(l)) return ['VBG', '-ing'];
+  if(/ed$/.test(l)) return ['VBD', '-ed'];
+  if(/ly$/.test(l)) return ['RB', '-ly'];
+  if(/(ous|ful|ive|able|al)$/.test(l)) return ['JJ', 'adj suffix'];
+  if(/s$/.test(l) && !/ss$/.test(l)) return ['NNS', 'plural -s'];
+  if(/^[A-Z]/.test(t)) return ['NNP', 'first word'];
+  return ['NN', 'fallback'];
+}
+function posTag(toks){ return toks.map((t, i) => posTagOne(t, i)[0]); }
+function posTrace(toks){ return toks.map((t, i) => { const [tag, rule] = posTagOne(t, i); return { tok:t, tag, rule }; }); }
+
+/* ---------------- stage 4 : named entities ----------------
+   Capitalization first, gazetteer second. Lowercase the text and it
+   collapses to nothing, which is the point of section 11.            */
+const NER_RULES = [
+  ['candidate',  'a run of capitalized words becomes a candidate span'],
+  ['sentence-start', 'a capitalized ordinary word at position 0 is not a name'],
+  ['org word',   'the span contains school / university / tech / ltd … → ORG'],
+  ['place list', 'every word is in the place list → GPE'],
+  ['all-caps',   'a single all-capitals token → MISC'],
+  ['person list','the span contains a known first or family name → PERSON'],
+  ['single word','one capitalized word, nothing else matched → PERSON'],
+  ['BIO',        'first token of the span gets B-, the rest get I-, everything else O']
+];
 function ner(toks){
   const spans = []; let i = 0;
   while(i < toks.length){
@@ -1013,36 +1102,52 @@ function ner(toks){
       let j = i + 1;
       while(j < toks.length && /^[A-Z]/.test(toks[j]) && !isPunct(toks[j])) j++;
       const words = toks.slice(i, j), low = words.map(w => w.toLowerCase());
-      let type = 'PERSON';
-      if(low.some(w => ORGWORD.has(w))) type = 'ORG';
-      else if(low.every(w => PLACES.has(w))) type = 'GPE';
-      else if(words.length === 1 && /^[A-Z]{2,}$/.test(words[0])) type = 'MISC';
-      else if(low.some(w => PERSONS.has(w))) type = 'PERSON';
-      else if(words.length === 1) type = 'PERSON';
-      spans.push({ start: i, end: j, type, text: words.join(' ') });
+      let type = 'PERSON', rule = 'single word';
+      if(low.some(w => ORGWORD.has(w))){ type = 'ORG'; rule = 'org word'; }
+      else if(low.every(w => PLACES.has(w))){ type = 'GPE'; rule = 'place list'; }
+      else if(words.length === 1 && /^[A-Z]{2,}$/.test(words[0])){ type = 'MISC'; rule = 'all-caps'; }
+      else if(low.some(w => PERSONS.has(w))){ type = 'PERSON'; rule = 'person list'; }
+      spans.push({ start:i, end:j, type, rule, text: words.join(' ') });
       i = j;
     } else i++;
   }
   return spans;
 }
-function lemmatize(tok, tag){
+
+/* ---------------- stage 5 : lemmatization ---------------- */
+const LEMMA_RULES = [
+  ['irregular', 'look it up in a list of ' + Object.keys(LEMMA).length + ' irregular forms'],
+  ['punctuation', 'punctuation is left exactly as it is'],
+  ['-ing', 'tagged VBG → drop -ing, undouble a repeated consonant, restore a silent -e on a C-V-C ending'],
+  ['-ed', 'tagged VBD and ends in -ed → drop -ed'],
+  ['-ies', 'ends in -ies → -y'],
+  ['-es', 'ends in -ches / -shes / -xes / -ses → drop -es'],
+  ['-s', 'ends in -s but not -ss → drop the -s'],
+  ['unchanged', 'no rule applies — the word is already its own lemma']
+];
+function lemmaOne(tok, tag){
   const l = tok.toLowerCase();
-  if(LEMMA[l]) return LEMMA[l];
-  if(isPunct(tok)) return tok;
+  if(LEMMA[l]) return [LEMMA[l], 'irregular'];
+  if(isPunct(tok)) return [tok, 'punctuation'];
   if(tag === 'VBG' && l.length > 4){
-    let b = l.slice(0, -3);
-    if(/([^aeiou])\1$/.test(b)) b = b.slice(0, -1);
-    return /[^aeiou]$/.test(b) && !/e$/.test(b) ? (['us','at','iz','iv','ov'].some(x=>b.endsWith(x)) ? b + 'e' : b) : b;
+    let b = l.slice(0, -3), undoubled = false;
+    if(/([^aeiou])\1$/.test(b)){ b = b.slice(0, -1); undoubled = true; }
+    /* restore a silent -e only on a consonant-vowel-consonant ending, and never
+       after undoubling: tak->take, com->come, but run stays run and eat stays eat */
+    const cvc = /[^aeiou][aeiou][^aeiouwxy]$/.test(b) || (b.length === 2 && /[^aeiou]$/.test(b));
+    return [(!undoubled && cvc) ? b + 'e' : b, '-ing'];
   }
-  if(tag === 'VBD' && /ed$/.test(l) && l.length > 4) return l.slice(0, -2);
+  if(tag === 'VBD' && /ed$/.test(l) && l.length > 4) return [l.slice(0, -2), '-ed'];
   if((tag === 'NNS' || /s$/.test(l)) && !/ss$/.test(l) && l.length > 3){
-    if(/ies$/.test(l)) return l.slice(0, -3) + 'y';
-    if(/(ches|shes|xes|ses)$/.test(l)) return l.slice(0, -2);
-    if(/s$/.test(l)) return l.slice(0, -1);
+    if(/ies$/.test(l)) return [l.slice(0, -3) + 'y', '-ies'];
+    if(/(ches|shes|xes|ses)$/.test(l)) return [l.slice(0, -2), '-es'];
+    if(/s$/.test(l)) return [l.slice(0, -1), '-s'];
   }
-  return l;
+  return [l, 'unchanged'];
 }
-/* Porter-style suffix stripping — a teaching subset of the ~60 real rules */
+function lemmatize(tok, tag){ return lemmaOne(tok, tag)[0]; }
+
+/* ---------------- Porter-style stemming (a teaching subset) ---------------- */
 function stem(w){
   let s = w.toLowerCase();
   if(/sses$/.test(s)) s = s.slice(0, -2);
@@ -1109,6 +1214,158 @@ function tk(text, cls, sub){
   return '<span class="tk' + (cls ? ' ' + cls : '') + '">' + esc(text) + (sub ? '<u>' + esc(sub) + '</u>' : '') + '</span>';
 }
 function statBlock(pairs){ return pairs.map(p => '<div><b>' + p[1] + '</b>' + p[0] + '</div>').join(''); }
+
+/* =====================================================================
+   "Rules applied at this step" — for every stage, the rules the code
+   actually runs, whether each one fired on the current sentence, and
+   exactly what it changed. Built from the same trace functions the
+   pipeline itself uses.
+   ===================================================================== */
+function rulePanel(intro, rows){
+  if(!rows.length) return '<div class="rules"><h5>Rules applied at this step</h5><p class="rnote">' + intro + '</p></div>';
+  return '<div class="rules"><h5>Rules applied at this step</h5>' +
+    (intro ? '<p class="rnote">' + intro + '</p>' : '') +
+    '<div class="tw"><table><tr><th>#</th><th>Rule</th><th>Pattern or formula</th><th>Ran?</th><th>What it did to this sentence</th></tr>' +
+    rows.map((r, i) => '<tr class="' + (r.fired ? 'fired' : 'idle') + '"><td class="rn">' + (i + 1) + '</td>' +
+      '<td><b>' + r.name + '</b></td><td><code>' + r.code + '</code></td>' +
+      '<td class="ryes">' + (r.fired ? '<span class="yes">ran</span>' : (r.off ? '<span class="off">off</span>' : '<span class="no">—</span>')) + '</td>' +
+      '<td>' + r.result + '</td></tr>').join('') +
+    '</table></div></div>';
+}
+const bit = (t, cls) => '<span class="tk' + (cls ? ' ' + cls : '') + '">' + esc(t) + '</span>';
+const list = (arr, cls, cap) => arr.length > (cap || 12)
+  ? arr.slice(0, cap || 12).map(x => bit(x, cls)).join(' ') + ' <span class="hint">+' + (arr.length - (cap || 12)) + ' more</span>'
+  : arr.map(x => bit(x, cls)).join(' ');
+
+function stageRules(cur, d){
+  const raw = d.raw;
+
+  if(cur === 0)
+    return rulePanel('No rules have run yet. This is the sentence exactly as it was typed — ' +
+      raw.length + ' characters, which to the computer is just a row of numbered symbols.', []);
+
+  if(cur === 1){
+    const tr = normalizeTrace(raw, opt);
+    return rulePanel('Applied in this order, each one to the output of the one above it.',
+      tr.steps.map(s => ({
+        name: s.name, code: s.code, fired: s.fired, off: s.off,
+        result: s.off ? '<span class="hint">' + s.note + '</span>'
+          : s.fired
+            ? (s.hits && s.hits.length
+                ? s.hits.map(h => bit(h, 'del')).join(' ') + ' <b>→</b> ' + bit(s.after.length < 90 ? s.after.trim() : '…changed…', 'add')
+                : bit(s.before.length > 60 ? s.before.slice(0, 57) + '…' : s.before, 'del') + ' <b>→</b> ' +
+                  bit(s.after.length > 60 ? s.after.slice(0, 57) + '…' : s.after, 'add'))
+            : '<span class="hint">' + s.note + '</span>'
+      })));
+  }
+
+  if(cur === 2){
+    const tr = tokenizeTrace(d.norm);
+    return rulePanel('One regular expression does the cutting; a second rule pulls clitics apart afterwards.', [
+      { name:'Match words, numbers, marks', code:"/[A-Za-z]+(?:'[A-Za-z]+)?|\\d[\\d,.]*|[^\\sA-Za-z0-9]/g",
+        fired:true, result:'matched <b>' + tr.matched + '</b> pieces' },
+      { name:'Split off clitics', code:"/^(.*?)(n't|'s|'re|'ve|'ll|'d|'m)$/", fired: tr.splits.length > 0,
+        result: tr.splits.length ? tr.splits.map(x => bit(x, 'chg')).join(' ')
+          : '<span class="hint">no word ends in a clitic here</span>' },
+      { name:'Punctuation stands alone', code:'/^[^A-Za-z0-9]+$/', fired: tr.punct.length > 0,
+        result: tr.punct.length ? list(tr.punct, 'chg') + ' <span class="hint">kept as separate tokens</span>'
+          : '<span class="hint">no punctuation in this sentence</span>' },
+      { name:'Numbers stay whole', code:'/\\d[\\d,.]*/', fired: tr.nums.length > 0,
+        result: tr.nums.length ? list(tr.nums, 'chg') : '<span class="hint">no digits here — try &#8377;1,50,000</span>' }
+    ]);
+  }
+
+  if(cur === 3){
+    const tr = posTrace(d.toks);
+    return rulePanel('Tried strictly top to bottom. The first rule that matches decides the tag, and the rest are never reached.',
+      POS_RULES.map(([key, desc]) => {
+        const hit = tr.filter(x => x.rule === key);
+        return { name: key, code: desc, fired: hit.length > 0,
+          result: hit.length ? hit.map(x => '<span class="tk chg">' + esc(x.tok) + '<u>' + x.tag + '</u></span>').join(' ')
+            : '<span class="hint">no token reached this rule</span>' };
+      }));
+  }
+
+  if(cur === 4){
+    const caps = d.toks.filter((t, i) => /^[A-Z]/.test(t) && !isPunct(t));
+    const skipped = d.toks.filter((t, i) => i === 0 && /^[A-Z]/.test(t) && (LEX[t.toLowerCase()] || STOP.has(t.toLowerCase())));
+    const byRule = k => d.spans.filter(s => s.rule === k);
+    const show = k => byRule(k).length
+      ? byRule(k).map(s => '<span class="tk ent">' + esc(s.text) + '<u>' + s.type + '</u></span>').join(' ')
+      : '<span class="hint">no span matched this test</span>';
+    return rulePanel('A span is found first, then typed by the first test it passes.', [
+      { name:'candidate', code:'a run of words starting with a capital', fired: caps.length > 0,
+        result: caps.length ? list(caps, 'ent') : '<span class="hint">nothing is capitalized — was the text lowercased at stage 1?</span>' },
+      { name:'sentence-start', code:'position 0 and an ordinary word → not a name', fired: skipped.length > 0,
+        result: skipped.length ? list(skipped, 'del') + ' <span class="hint">rejected</span>'
+          : '<span class="hint">the first word is not an ordinary capitalized word</span>' },
+      { name:'org word', code:'span contains school / university / tech / ltd …', fired: byRule('org word').length > 0, result: show('org word') },
+      { name:'place list', code:'every word is in the place gazetteer', fired: byRule('place list').length > 0, result: show('place list') },
+      { name:'all-caps', code:'/^[A-Z]{2,}$/ on a single token', fired: byRule('all-caps').length > 0, result: show('all-caps') },
+      { name:'person list', code:'span contains a known personal name', fired: byRule('person list').length > 0, result: show('person list') },
+      { name:'single word', code:'fallback for one capitalized word', fired: byRule('single word').length > 0, result: show('single word') },
+      { name:'BIO labels', code:'first token B-, the rest I-, everything else O', fired: d.spans.length > 0,
+        result: d.spans.length ? d.bio.filter(b => b !== 'O').map(b => bit(b, 'ent')).join(' ')
+          : '<span class="hint">nothing to label</span>' }
+    ]);
+  }
+
+  if(cur === 5){
+    const tr = d.toks.map((t, i) => { const [lem, rule] = lemmaOne(t, d.tags[i]); return { tok:t, lem, rule, tag:d.tags[i] }; });
+    return rulePanel('Tried top to bottom, and the POS tag from the previous stage decides which of them are even eligible.',
+      LEMMA_RULES.map(([key, desc]) => {
+        const hit = tr.filter(x => x.rule === key);
+        const changed = hit.filter(x => x.lem !== x.tok.toLowerCase());
+        return { name: key, code: desc, fired: hit.length > 0,
+          result: hit.length
+            ? (changed.length ? changed.map(x => bit(x.tok, 'del') + '<b>→</b>' + bit(x.lem, 'add')).join(' ') +
+                (hit.length > changed.length ? ' <span class="hint">and ' + (hit.length - changed.length) + ' left as they were</span>' : '')
+              : '<span class="hint">' + hit.length + ' token' + (hit.length > 1 ? 's' : '') + ', none needed changing</span>')
+            : '<span class="hint">no token reached this rule</span>' };
+      }));
+  }
+
+  if(cur === 6){
+    const punct = d.toks.filter(t => isPunct(t));
+    const stopped = d.lem.filter((l, i) => !isPunct(d.toks[i]) && d.drop[i]);
+    const saved = d.lem.filter(l => opt.keepNeg && NEG.has(l.toLowerCase()));
+    const kept = d.lem.filter((l, i) => !d.drop[i]);
+    return rulePanel('Each surviving token is tested against the list. The list is ' + STOP.size + ' words long here; NLTK ships about 179.', [
+      { name:'drop punctuation', code:'/^[^A-Za-z0-9]+$/', fired: punct.length > 0,
+        result: punct.length ? list(punct, 'del') : '<span class="hint">no punctuation left</span>' },
+      { name:'drop stopwords', code:'lemma is in the stoplist', fired: stopped.length > 0,
+        result: stopped.length ? list(stopped, 'del') : '<span class="hint">nothing matched the list</span>' },
+      { name:'keep negations', code:"stoplist − {not, no, nor, n't, never}", fired: saved.length > 0, off: !opt.keepNeg,
+        result: opt.keepNeg
+          ? (saved.length ? list(saved, 'add') + ' <span class="hint">rescued</span>' : '<span class="hint">no negation in this sentence</span>')
+          : '<span class="hint">switched off — negations are being dropped with everything else</span>' },
+      { name:'what survives', code:'kept = tokens − punctuation − stopwords', fired: true,
+        result: list(kept, 'add') + ' <span class="hint">' + kept.length + ' of ' + d.toks.length + '</span>' }
+    ]);
+  }
+
+  if(cur === 7){
+    const entries = Object.entries(d.counts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    const total = d.kept.length;
+    const top = entries[0];
+    const tf = top ? (top[1] / total) : 0;
+    return rulePanel('Now the formulas. This is one document, so term frequency can be computed here; the idf half needs a whole corpus.', [
+      { name:'build the vocabulary', code:'vocab = sorted(set(tokens))', fired: entries.length > 0,
+        result: list(entries.map(e => e[0]), 'add') + ' <span class="hint">' + entries.length + ' columns</span>' },
+      { name:'count each term', code:'count(t, d)', fired: entries.length > 0,
+        result: entries.map(e => '<span class="tk add">' + esc(e[0]) + '<u>' + e[1] + '×</u></span>').join(' ') },
+      { name:'term frequency', code:'TF(t,d) = count(t,d) ÷ total terms in d', fired: !!top,
+        result: top ? 'TF(<b>' + esc(top[0]) + '</b>) = ' + top[1] + ' ÷ ' + total + ' = <b>' + tf.toFixed(3) + '</b>'
+          : '<span class="hint">nothing left to count</span>' },
+      { name:'inverse document frequency', code:'IDF(t) = log( N ÷ (1 + df(t)) )', fired: false,
+        result: '<span class="hint">needs a corpus of many documents — N = 1 here. Try the live matrix in §10c.</span>' },
+      { name:'the vector', code:'[ count(t) for t in vocab ]', fired: entries.length > 0,
+        result: '<code>[' + entries.slice().sort((a, b) => a[0].localeCompare(b[0])).map(e => e[1]).join(', ') + ']</code>' +
+                ' <span class="hint">' + entries.length + ' numbers, in alphabetical order of the vocabulary</span>' }
+    ]);
+  }
+  return '';
+}
 
 function render(){
   const d = compute(), st = STAGES[cur];
@@ -1203,6 +1460,7 @@ function render(){
   $('#s-extra').innerHTML = extra;
   $('#s-stat').innerHTML = stat;
   $('#s-note').innerHTML = note;
+  $('#s-rules').innerHTML = stageRules(cur, d);
   const tl = $('#t-lower'), tc = $('#t-contract'), tn = $('#t-neg');
   if(tl) tl.onchange = e => { opt.lower = e.target.checked; render(); };
   if(tc) tc.onchange = e => { opt.contract = e.target.checked; render(); };
