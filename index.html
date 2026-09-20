@@ -268,10 +268,12 @@ footer b{color:var(--ink)}
 
   <div class="machine">
     <div class="m-bar">
-      <input type="text" id="inp" value="Satyaki was teaching NLP classes at Classroom Tech in Bengaluru, and the students weren't loving it." aria-label="Input sentence">
+      <input type="text" id="inp" value="Meera's students weren't loving the &lt;b&gt;NLP&lt;/b&gt; batches in 2023, but they're saying she'll quickly fix 12 trending queries; I'm nervous we've asked twice, Satyaki can't delay and won't cancel those projects at Classroom Tech in Bengaluru, and the café  review is overdue." aria-label="Input sentence">
       <button class="btn" id="run">Run all</button>
       <button class="btn ghost" id="stepb">Step &rarr;</button>
       <button class="btn ghost" id="reset">Reset</button>
+        <button class="btn ghost" id="ex-simple" title="A short, natural sentence">Simple sentence</button>
+        <button class="btn ghost" id="ex-all" title="Fires every rule in every stage">Every-rule sentence</button>
     </div>
     <div class="rail" id="rail"></div>
     <div class="m-body">
@@ -287,6 +289,11 @@ footer b{color:var(--ink)}
         <div id="s-rules"></div>
     </div>
   </div>
+  <p class="hint"><strong>About the sentence in the box.</strong> It is overstuffed on purpose &mdash; an HTML tag, an
+  accented letter stored the awkward way, a double space, all seven contractions, two numbers, a possessive, and a word for
+  every suffix rule &mdash; so that <strong>49 of the 52 rules</strong> listed below actually fire on it. The other three need a
+  nudge: tick <em>Lowercase now</em> at Normalize, tick <em>Keep the negations</em> at Stopwords, and idf needs a whole corpus,
+  which is what the live matrix in &sect;10c is for. Press <strong>Simple sentence</strong> for the short one used elsewhere on this page.</p>
   <p class="hint">The taggers, lemmatizer and entity recogniser here are small teaching implementations — a lexicon plus suffix and capitalization rules — not NLTK or spaCy. They behave the way the real thing behaves on ordinary sentences, and they break in the same places, which is the point.</p>
 </section>
 
@@ -958,7 +965,7 @@ const LEX = {
   i:'PRP', it:'PRP', he:'PRP', she:'PRP', they:'PRP', we:'PRP', you:'PRP', me:'PRP', him:'PRP', her:'PRP$', his:'PRP$', my:'PRP$', their:'PRP$',
   can:'MD', will:'MD', would:'MD', should:'MD', could:'MD', may:'MD', might:'MD', must:'MD',
   good:'JJ', bad:'JJ', great:'JJ', terrible:'JJ', amazing:'JJ', better:'JJR', best:'JJS', quick:'JJ', brown:'JJ', happy:'JJ', fun:'NN',
-  who:'WP', what:'WP', which:'WDT', where:'WRB', when:'WRB', why:'WRB', how:'WRB',
+  who:'WP', what:'WP', which:'WDT', where:'WRB', when:'WRB', why:'WRB', how:'WRB', "'s":'POS',
   students:'NNS', student:'NN', classes:'NNS', class:'NN', teaching:'VBG', love:'VBP', loving:'VBG', like:'VBP', ran:'VBD', run:'VB',
   fish:'NN', duck:'NN', man:'NN', woman:'NN', bank:'NN', camera:'NN', battery:'NN', life:'NN', data:'NNS'
 };
@@ -1026,7 +1033,7 @@ function normalizeTrace(raw, opt){
 function normalize(raw, opt){ return normalizeTrace(raw, opt).out; }
 
 /* ---------------- stage 2 : tokenization ---------------- */
-const TOKEN_RE = /[A-Za-z]+(?:'[A-Za-z]+)?|\d[\d,.]*|[^\sA-Za-z0-9]/g;
+const TOKEN_RE = /\p{L}+(?:'\p{L}+)?|\d+(?:[.,]\d+)*|[^\s\p{L}\d]/gu;
 const CLITIC_RE = /^(.*?)(n't|'s|'re|'ve|'ll|'d|'m)$/;
 function tokenizeTrace(s){
   const raw = s.match(TOKEN_RE) || [], toks = [], splits = [], punct = [], nums = [];
@@ -1036,7 +1043,7 @@ function tokenizeTrace(s){
       const a = w.slice(0, cl[1].length), b = w.slice(cl[1].length);
       splits.push(w + ' → ' + a + ' + ' + b); toks.push(a, b);
     } else {
-      if(/^[^A-Za-z0-9]+$/.test(w)) punct.push(w);
+      if(isPunct(w)) punct.push(w);
       if(/^\d/.test(w)) nums.push(w);
       toks.push(w);
     }
@@ -1044,7 +1051,7 @@ function tokenizeTrace(s){
   return { toks, splits, punct, nums, matched: raw.length };
 }
 function tokenize(s){ return tokenizeTrace(s).toks; }
-const isPunct = t => /^[^A-Za-z0-9]+$/.test(t);
+const isPunct = t => !/[\p{L}\d]/u.test(t);
 
 /* ---------------- stage 3 : part-of-speech ---------------- */
 const POS_RULES = [
@@ -1084,7 +1091,7 @@ function posTrace(toks){ return toks.map((t, i) => { const [tag, rule] = posTagO
    collapses to nothing, which is the point of section 11.            */
 const NER_RULES = [
   ['candidate',  'a run of capitalized words becomes a candidate span'],
-  ['sentence-start', 'a capitalized ordinary word at position 0 is not a name'],
+  ['common word', 'a capitalized word that is an ordinary English word is not a name'],
   ['org word',   'the span contains school / university / tech / ltd … → ORG'],
   ['place list', 'every word is in the place list → GPE'],
   ['all-caps',   'a single all-capitals token → MISC'],
@@ -1097,7 +1104,7 @@ function ner(toks){
   while(i < toks.length){
     const t = toks[i];
     const cap = /^[A-Z]/.test(t) && !isPunct(t);
-    const common = i === 0 && (LEX[t.toLowerCase()] || STOP.has(t.toLowerCase()));
+    const common = LEX[t.toLowerCase()] || STOP.has(t.toLowerCase());
     if(cap && !common){
       let j = i + 1;
       while(j < toks.length && /^[A-Z]/.test(toks[j]) && !isPunct(toks[j])) j++;
@@ -1129,6 +1136,7 @@ function lemmaOne(tok, tag){
   const l = tok.toLowerCase();
   if(LEMMA[l]) return [LEMMA[l], 'irregular'];
   if(isPunct(tok)) return [tok, 'punctuation'];
+  if(!/^[a-z]/.test(l)) return [l, 'unchanged'];
   if(tag === 'VBG' && l.length > 4){
     let b = l.slice(0, -3), undoubled = false;
     if(/([^aeiou])\1$/.test(b)){ b = b.slice(0, -1); undoubled = true; }
@@ -1262,15 +1270,15 @@ function stageRules(cur, d){
   if(cur === 2){
     const tr = tokenizeTrace(d.norm);
     return rulePanel('One regular expression does the cutting; a second rule pulls clitics apart afterwards.', [
-      { name:'Match words, numbers, marks', code:"/[A-Za-z]+(?:'[A-Za-z]+)?|\\d[\\d,.]*|[^\\sA-Za-z0-9]/g",
+      { name:'Match words, numbers, marks', code:"/\\p{L}+(?:'\\p{L}+)?|\\d+(?:[.,]\\d+)*|[^\\s\\p{L}\\d]/gu",
         fired:true, result:'matched <b>' + tr.matched + '</b> pieces' },
       { name:'Split off clitics', code:"/^(.*?)(n't|'s|'re|'ve|'ll|'d|'m)$/", fired: tr.splits.length > 0,
         result: tr.splits.length ? tr.splits.map(x => bit(x, 'chg')).join(' ')
           : '<span class="hint">no word ends in a clitic here</span>' },
-      { name:'Punctuation stands alone', code:'/^[^A-Za-z0-9]+$/', fired: tr.punct.length > 0,
+      { name:'Punctuation stands alone', code:'a token with no letter and no digit', fired: tr.punct.length > 0,
         result: tr.punct.length ? list(tr.punct, 'chg') + ' <span class="hint">kept as separate tokens</span>'
           : '<span class="hint">no punctuation in this sentence</span>' },
-      { name:'Numbers stay whole', code:'/\\d[\\d,.]*/', fired: tr.nums.length > 0,
+      { name:'Numbers stay whole', code:'/\\d+(?:[.,]\\d+)*/', fired: tr.nums.length > 0,
         result: tr.nums.length ? list(tr.nums, 'chg') : '<span class="hint">no digits here — try &#8377;1,50,000</span>' }
     ]);
   }
@@ -1288,7 +1296,7 @@ function stageRules(cur, d){
 
   if(cur === 4){
     const caps = d.toks.filter((t, i) => /^[A-Z]/.test(t) && !isPunct(t));
-    const skipped = d.toks.filter((t, i) => i === 0 && /^[A-Z]/.test(t) && (LEX[t.toLowerCase()] || STOP.has(t.toLowerCase())));
+    const skipped = d.toks.filter(t => /^[A-Z]/.test(t) && (LEX[t.toLowerCase()] || STOP.has(t.toLowerCase())));
     const byRule = k => d.spans.filter(s => s.rule === k);
     const show = k => byRule(k).length
       ? byRule(k).map(s => '<span class="tk ent">' + esc(s.text) + '<u>' + s.type + '</u></span>').join(' ')
@@ -1296,9 +1304,9 @@ function stageRules(cur, d){
     return rulePanel('A span is found first, then typed by the first test it passes.', [
       { name:'candidate', code:'a run of words starting with a capital', fired: caps.length > 0,
         result: caps.length ? list(caps, 'ent') : '<span class="hint">nothing is capitalized — was the text lowercased at stage 1?</span>' },
-      { name:'sentence-start', code:'position 0 and an ordinary word → not a name', fired: skipped.length > 0,
-        result: skipped.length ? list(skipped, 'del') + ' <span class="hint">rejected</span>'
-          : '<span class="hint">the first word is not an ordinary capitalized word</span>' },
+      { name:'common word', code:'capitalized, but an ordinary English word → not a name', fired: skipped.length > 0,
+        result: skipped.length ? list(skipped, 'del') + ' <span class="hint">rejected before typing</span>'
+          : '<span class="hint">no capitalized ordinary word in this sentence</span>' },
       { name:'org word', code:'span contains school / university / tech / ltd …', fired: byRule('org word').length > 0, result: show('org word') },
       { name:'place list', code:'every word is in the place gazetteer', fired: byRule('place list').length > 0, result: show('place list') },
       { name:'all-caps', code:'/^[A-Z]{2,}$/ on a single token', fired: byRule('all-caps').length > 0, result: show('all-caps') },
@@ -1331,7 +1339,7 @@ function stageRules(cur, d){
     const saved = d.lem.filter(l => opt.keepNeg && NEG.has(l.toLowerCase()));
     const kept = d.lem.filter((l, i) => !d.drop[i]);
     return rulePanel('Each surviving token is tested against the list. The list is ' + STOP.size + ' words long here; NLTK ships about 179.', [
-      { name:'drop punctuation', code:'/^[^A-Za-z0-9]+$/', fired: punct.length > 0,
+      { name:'drop punctuation', code:'no letter and no digit in the token', fired: punct.length > 0,
         result: punct.length ? list(punct, 'del') : '<span class="hint">no punctuation left</span>' },
       { name:'drop stopwords', code:'lemma is in the stoplist', fired: stopped.length > 0,
         result: stopped.length ? list(stopped, 'del') : '<span class="hint">nothing matched the list</span>' },
@@ -1480,6 +1488,13 @@ $('#run').onclick = () => {
     cur++; render();
   }, 1400);
 };
+/* two presets: the short natural sentence used throughout the notes, and one
+   stuffed on purpose so that every rule in every stage has something to do */
+const EX_SIMPLE = "Satyaki was teaching NLP classes at Classroom Tech in Bengaluru, and the students weren't loving it.";
+const EX_ALL = "Meera's students weren't loving the <b>NLP</b> batches in 2023, but they're saying she'll quickly fix 12 trending queries; I'm nervous we've asked twice, Satyaki can't delay and won't cancel those projects at Classroom Tech in Bengaluru, and the café  review is overdue.";
+function loadExample(t){ stop(); $('#inp').value = t; opt.lower = false; opt.keepNeg = false; opt.contract = true; cur = 0; render(); }
+$('#ex-simple').onclick = () => loadExample(EX_SIMPLE);
+$('#ex-all').onclick = () => loadExample(EX_ALL);
 $('#inp').oninput = () => render();
 render();
 </script>
