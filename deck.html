@@ -152,6 +152,10 @@ svg text{font-family:var(--f)}
 .m-bar input[type=text]{flex:1 1 300px; min-width:0; font-family:var(--f); font-size:clamp(12px,1.55vh,15px); padding:6px 9px;
   border:1px solid var(--rule); border-radius:3px; background:var(--sheet); color:var(--ink)}
 .m-bar input[type=text]:focus{background:#fff; border-color:var(--nc)}
+.m-bar textarea{flex:1 1 100%; min-width:0; font-family:var(--f); font-size:clamp(12px,1.55vh,15px); line-height:1.5;
+  padding:6px 9px; border:1px solid var(--rule); border-radius:3px; background:var(--sheet); color:var(--ink);
+  resize:none; overflow:auto; display:block; max-height:22vh}
+.m-bar textarea:focus{background:#fff; border-color:var(--nc); outline:none}
 .btn{font-family:var(--f); font-size:clamp(10px,1.3vh,12px); font-weight:700; letter-spacing:.06em; text-transform:uppercase;
      padding:7px 12px; border:1px solid var(--ink); border-radius:3px; background:var(--ink); color:#fff; cursor:pointer; line-height:1}
 .btn.ghost{background:var(--paper); color:var(--ink-2); border-color:var(--rule)}
@@ -331,7 +335,7 @@ svg text{font-family:var(--f)}
   <div class="body" style="overflow:hidden">
     <div class="machine">
       <div class="m-bar">
-        <input type="text" id="inp" value="Meera's students weren't loving the &lt;b&gt;NLP&lt;/b&gt; batches in 2023, but they're saying she'll quickly fix 12 trending queries; I'm nervous we've asked twice, Satyaki can't delay and won't cancel those projects at Classroom Tech in Bengaluru, and the café  review is overdue." aria-label="Input sentence">
+        <textarea id="inp" rows="3" spellcheck="false" aria-label="Input sentence">Meera's students weren't loving the &lt;b&gt;NLP&lt;/b&gt; batches in 2023, but they're saying she'll quickly fix 12 trending queries; I'm nervous we've asked twice, Satyaki can't delay and won't cancel those projects at Classroom Tech in Bengaluru, and the café  review is overdue.</textarea>
         <button class="btn" id="run">Run all</button>
         <button class="btn ghost" id="stepb">Step &rarr;</button>
         <button class="btn ghost" id="reset">Reset</button>
@@ -1555,9 +1559,20 @@ $('#run').onclick = () => {
    stuffed on purpose so that every rule in every stage has something to do */
 const EX_SIMPLE = "Satyaki was teaching NLP classes at Classroom Tech in Bengaluru, and the students weren't loving it.";
 const EX_ALL = "Meera's students weren't loving the <b>NLP</b> batches in 2023, but they're saying she'll quickly fix 12 trending queries; I'm nervous we've asked twice, Satyaki can't delay and won't cancel those projects at Classroom Tech in Bengaluru, and the café  review is overdue.";
-function loadExample(t){ stop(); $('#inp').value = t; opt.lower = false; opt.keepNeg = false; opt.contract = true; cur = 0; render(); }
+function loadExample(t){ stop(); $('#inp').value = t; if(window.autogrowInp) autogrowInp(); opt.lower = false; opt.keepNeg = false; opt.contract = true; cur = 0; render(); }
 $('#ex-simple').onclick = () => loadExample(EX_SIMPLE);
 $('#ex-all').onclick = () => loadExample(EX_ALL);
+/* the box has to show the whole sentence, not the first 40 characters of it */
+const inpBox = $('#inp');
+function autogrow(){
+  if(!inpBox.offsetParent && inpBox.offsetHeight === 0) return;   /* hidden slide: wait until it is shown */
+  inpBox.style.height = 'auto';
+  inpBox.style.height = (inpBox.scrollHeight + 2) + 'px';
+}
+window.autogrowInp = autogrow;
+inpBox.addEventListener('input', autogrow);
+window.addEventListener('resize', autogrow);
+autogrow();
 $('#inp').oninput = () => render();
 render();
 </script>
@@ -1880,6 +1895,7 @@ function show(n, skipHash){
   document.getElementById('prev').disabled = idx === 0;
   document.getElementById('next').disabled = idx === slides.length - 1;
   slides[idx].querySelector('.body').scrollTop = 0;
+  if(window.autogrowInp) autogrowInp();   /* the box can only be measured once its slide is shown */
   if(!skipHash) history.replaceState(null, '', '#' + (idx + 1));
 }
 document.getElementById('prev').onclick = () => show(idx - 1);
