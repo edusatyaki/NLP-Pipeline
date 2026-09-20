@@ -4,15 +4,15 @@ An interactive teaching site for the classic Natural Language Processing pipelin
 text to numeric vectors. Built from a set of lecture notes, with every stage runnable in the
 browser.
 
-**Live:** https://edusatyaki.github.io/NLP-Pipeline/
-**Slides:** https://edusatyaki.github.io/NLP-Pipeline/deck.html
+**Slides:** https://edusatyaki.github.io/NLP-Pipeline/ — the deck, driven by the arrow keys
+**Notes:** https://edusatyaki.github.io/NLP-Pipeline/notes.html — the same material, scrollable
 
 ## What is here
 
 | File | What it is |
 | --- | --- |
-| `index.html` | The full notes — fourteen sections, scrollable, with live demos and diagrams |
-| `deck.html` | The same material as a 52-slide lecture deck for presenting |
+| `index.html` | The lecture deck — 53 slides on a fixed 16:9 stage that scales to the screen |
+| `notes.html` | The full notes — fourteen sections, scrollable, with live demos and diagrams |
 
 Both are single self-contained files. No build step, no dependencies, no network calls —
 open the file and it works.
@@ -59,8 +59,14 @@ python3 -m http.server 8101
 
 Then open http://localhost:8101 — or just open `index.html` directly in a browser.
 
-## Presenting from the deck
+## Presenting
 
-Arrow keys or space to move, `F` for full screen, `N` to jump to the notes, `Home` / `End`
-for the ends. Swipe works on a tablet. The slide number is in the URL, so you can bookmark
-where you left off.
+The deck is a fixed 1280×720 stage scaled to whatever screen it lands on, so the type is
+the same size relative to the slide on a laptop and on a projector.
+
+`←` `→` or space to move, `F` for full screen, `N` to jump to the notes, `Home` / `End` for
+the ends. Swipe works on a tablet. The slide number is in the URL, so you can bookmark where
+you left off.
+
+The notes take `←` `→` too, stepping section by section, so they can be driven the same way.
+`S` opens the slides.

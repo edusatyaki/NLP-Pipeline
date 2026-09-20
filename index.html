@@ -1,8 +1,8 @@
 <!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The Classic NLP Pipeline</title>
-<meta name="description" content="From raw text to numeric vectors — tokenization, stemming, lemmatization, stopwords, POS, parsing, NER and vectorization, visualized end to end.">
+<title>NLP Pipeline — Lecture Deck</title>
+<meta name="description" content="The classic NLP pipeline as a lecture deck: tokenization to vectorization, with live demos on every stage.">
 
 <style>
 :root{
@@ -14,195 +14,124 @@
   --keep:#0E4B37; --keep-soft:#DDEFE8; --keep-line:#AFD6C6;
   --warn:#7A5406; --warn-soft:#FCF0DA; --warn-line:#E8D2A4;
   --f:Arial,Helvetica,sans-serif;
-  --maxw:1180px;
+  /* fixed design pixels — the whole slide is scaled to the window, like a projector */
+  --fs:20px; --h1:64px; --h2:38px; --h3:22px; --kick:12.5px; --big:24px; --pad:48px; --gap:18px;
+  --slide-w:1280px; --slide-h:720px;
 }
 *{box-sizing:border-box}
-html{scroll-behavior:smooth; scroll-padding-top:64px}
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
-body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--f); font-size:17px; line-height:1.62; -webkit-font-smoothing:antialiased}
-h1,h2,h3,h4{margin:0; letter-spacing:-.015em; line-height:1.2}
-p{margin:0 0 14px}
+html,body{height:100%; margin:0; overflow:hidden}
+body{background:var(--paper); color:var(--ink); font-family:var(--f); font-size:var(--fs); line-height:1.5; -webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0; letter-spacing:-.015em; line-height:1.15}
+p{margin:0 0 .7em}
 a{color:var(--nc)}
 :focus-visible{outline:2px solid var(--nc); outline-offset:2px; border-radius:3px}
-.wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px}
-code,.mono{font-family:var(--f); background:var(--sheet-2); border:1px solid var(--rule); border-radius:3px; padding:1px 5px; font-size:.88em; white-space:pre-wrap; overflow-wrap:anywhere}
-.hint{color:var(--ink-3); font-size:14.5px}
+code,.mono{font-family:var(--f); background:var(--sheet-2); border:1px solid var(--rule); border-radius:3px; padding:0 4px; font-size:.9em; white-space:pre-wrap; overflow-wrap:anywhere}
+[hidden]{display:none!important}
 
-/* ---------- top bar ---------- */
-.top{position:sticky; top:0; z-index:40; background:rgba(255,255,255,.96); backdrop-filter:blur(6px); border-bottom:1px solid var(--rule)}
-.top-in{max-width:var(--maxw); margin:0 auto; padding:8px 24px; display:flex; align-items:center; gap:16px}
+.app{display:grid; grid-template-rows:auto minmax(0,1fr) auto; grid-template-columns:minmax(0,1fr); height:100dvh; overflow:hidden}
+
+/* ---------- top ---------- */
+.top{display:flex; align-items:center; gap:12px; padding:6px 14px; background:var(--sheet); border-bottom:1px solid var(--rule); flex:0 0 auto; min-width:0}
 .brand{flex:0 0 auto; white-space:nowrap}
-.brand b{display:block; font-size:15.5px; line-height:1.15}
-.brand span{display:block; font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:var(--ink-3)}
-.nav{display:flex; gap:3px; flex:1 1 auto; min-width:0; overflow-x:auto; scrollbar-width:none}
-.nav::-webkit-scrollbar{height:0}
-.nav a{font-size:12.5px; font-weight:700; color:var(--ink-3); text-decoration:none; padding:5px 8px; border-radius:3px; white-space:nowrap}
-.nav a:hover{background:var(--sheet-2); color:var(--ink)}
-.nav a.on{background:var(--ink); color:#fff}
-.deckbtn{flex:0 0 auto; font-size:11.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:6px 10px;
-  border:1px solid var(--rule); border-radius:3px; color:var(--ink-2); text-decoration:none; background:var(--paper); white-space:nowrap}
-.deckbtn:hover{background:var(--ink); color:#fff; border-color:var(--ink)}
-@media(max-width:700px){.brand span{display:none} .brand b{font-size:13.5px} .top-in{gap:10px; padding:7px 14px} .wrap{padding:0 16px}}
+.brand b{display:block; font-size:15.5px; line-height:1.1}
+.brand span{display:block; font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3)}
+.chips{display:flex; gap:3px; flex:1 1 auto; min-width:0; overflow-x:auto; scrollbar-width:none}
+.chips::-webkit-scrollbar{height:0}
+.chip{font-family:var(--f); font-size:12.5px; font-weight:700; color:var(--ink-3); background:var(--paper);
+      border:1px solid var(--rule); border-radius:2px; padding:4px 8px; cursor:pointer; white-space:nowrap}
+.chip:hover{border-color:var(--ink); color:var(--ink)}
+.chip.on{background:var(--ink); color:#fff; border-color:var(--ink)}
+.tbtn{flex:0 0 auto; display:inline-flex; align-items:center; gap:6px; font-family:var(--f); font-size:11px; font-weight:700;
+      letter-spacing:.06em; text-transform:uppercase; background:var(--paper); border:1px solid var(--rule); color:var(--ink-2);
+      padding:5px 10px; border-radius:2px; cursor:pointer; line-height:1}
+.tbtn:hover{background:var(--ink); color:#fff; border-color:var(--ink)}
 
-/* ---------- hero ---------- */
-.hero{padding:56px 0 36px; border-bottom:3px solid var(--ink)}
-.kicker{font-size:11.5px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--nc); margin-bottom:12px}
-.hero h1{font-size:clamp(34px,6vw,62px)}
-.hero .sub{font-size:clamp(17px,2.4vw,22px); color:var(--ink-3); margin-top:12px; max-width:44ch}
-.funnel{display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin-top:26px}
-.funnel span{font-size:13px; font-weight:700; padding:5px 11px; border:1px solid var(--rule); border-radius:2px; background:var(--sheet)}
-.funnel i{font-style:normal; color:var(--ink-4)}
-.funnel span.end{background:var(--ink); color:#fff; border-color:var(--ink)}
+/* ---------- stage ---------- */
+.stage{position:relative; min-height:0; min-width:0; overflow:hidden; background:var(--sheet-3)}
+/* centred by translate rather than by alignment: the unscaled box is wider than
+   the stage, and centring an oversized box is not reliable across browsers */
+.slidebox{width:var(--slide-w); height:var(--slide-h); position:absolute; left:50%; top:50%; overflow:hidden;
+  background:var(--paper); border:1px solid var(--rule); border-radius:3px;
+  box-shadow:0 14px 44px rgba(13,17,23,.16); transform-origin:center center}
+.pagenum{position:absolute; right:26px; bottom:18px; font-size:13px; color:var(--ink-4); font-variant-numeric:tabular-nums; z-index:2}
+.s{display:none; position:absolute; inset:0; padding:var(--pad) calc(var(--pad) * 1.15) 54px;
+  grid-template-rows:auto minmax(0,1fr); gap:var(--gap); overflow:hidden}
+.s.on{display:grid; animation:in .22s ease-out}
+@keyframes in{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+@media (prefers-reduced-motion:reduce){.s.on{animation:none}}
+.s > .head{flex:0 0 auto}
+.kick{font-size:var(--kick); font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--nc); display:flex; align-items:center; gap:9px; margin-bottom:6px}
+.kick::before{content:""; width:16px; height:2px; background:currentColor}
+.s h2{font-size:var(--h2)}
+.s .sub{color:var(--ink-3); font-size:var(--big); margin-top:6px; max-width:60ch}
+.body{min-height:0; overflow:auto; scrollbar-width:thin}
+.body::-webkit-scrollbar{width:7px} .body::-webkit-scrollbar-thumb{background:var(--rule); border-radius:4px}
 
-/* ---------- sections ---------- */
-section{padding:52px 0; border-bottom:1px solid var(--rule)}
-.sec-head{display:flex; align-items:baseline; gap:14px; margin-bottom:8px}
-.sec-no{font-size:13px; font-weight:700; color:var(--ink-4); letter-spacing:.08em; padding-top:6px}
-h2{font-size:clamp(24px,3.4vw,34px)}
-.lede{font-size:18.5px; color:var(--ink-2); max-width:70ch; margin:14px 0 26px}
-h3{font-size:19px; margin:32px 0 12px}
-h4{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); margin:26px 0 10px}
-ul,ol{margin:0 0 16px; padding-left:22px}
-li{margin-bottom:7px}
+/* layouts */
+.cols2{display:grid; grid-template-columns:1fr 1fr; gap:calc(var(--gap) * 1.2); align-content:start}
+.cols3{display:grid; grid-template-columns:repeat(3,1fr); gap:calc(var(--gap) * 1.1); align-content:start}
+.mid{display:flex; flex-direction:column; justify-content:center; height:100%}
+.center{display:flex; flex-direction:column; align-items:flex-start; justify-content:center; height:100%}
+ul,ol{margin:0 0 .6em; padding-left:1.25em}
+li{margin-bottom:.42em}
+li::marker{color:var(--ink-4)}
+.lead{font-size:var(--big); color:var(--ink-2); max-width:62ch}
 
-/* ---------- cards / callouts ---------- */
-.card{background:var(--sheet); border:1px solid var(--rule); border-radius:5px; padding:20px 22px}
-.note{border-left:3px solid var(--nc); background:var(--nc-soft); padding:14px 18px; border-radius:0 4px 4px 0; margin:18px 0}
+/* blocks */
+.card{background:var(--sheet); border:1px solid var(--rule); border-radius:5px; padding:calc(var(--gap) * .9) calc(var(--gap) * 1.1)}
+.card h4{font-size:var(--kick); letter-spacing:.13em; text-transform:uppercase; color:var(--ink-3); margin-bottom:6px}
+.card p:last-child{margin-bottom:0}
+.note{border-left:3px solid var(--nc); background:var(--nc-soft); padding:calc(var(--gap) * .8) calc(var(--gap) * 1.1); border-radius:0 4px 4px 0}
 .note.good{border-color:var(--keep); background:var(--keep-soft)}
 .note.warn{border-color:var(--co); background:var(--co-soft)}
 .note.amber{border-color:var(--warn); background:var(--warn-soft)}
-.note h4{margin:0 0 6px; color:var(--nc)}
+.note h4{font-size:var(--kick); letter-spacing:.13em; text-transform:uppercase; color:var(--nc); margin-bottom:5px}
 .note.good h4{color:var(--keep)} .note.warn h4{color:var(--co)} .note.amber h4{color:var(--warn)}
 .note p:last-child{margin-bottom:0}
-pre{font-family:var(--f); background:var(--sheet); border:1px solid var(--rule); border-left:3px solid var(--nc); border-radius:0 4px 4px 0;
-    padding:14px 16px; overflow-x:auto; font-size:14px; line-height:1.55; margin:16px 0; white-space:pre}
-pre b{color:var(--nc)} pre i{font-style:normal; color:var(--ink-4)}
+pre{font-family:var(--f); background:var(--sheet); border:1px solid var(--rule); border-left:3px solid var(--nc);
+    border-radius:0 4px 4px 0; padding:calc(var(--gap) * .75) calc(var(--gap)); overflow:auto; margin:0;
+    font-size:16px; line-height:1.5; white-space:pre}
+pre i{font-style:normal; color:var(--ink-4)}
+pre b{color:var(--nc)}
+.quote{font-size:44px; line-height:1.22; letter-spacing:-.02em; max-width:22ch}
+.quote em{font-style:normal; color:var(--nc)}
+.by{margin-top:var(--gap); font-size:var(--kick); letter-spacing:.14em; text-transform:uppercase; color:var(--ink-4)}
 
-/* ---------- tables ---------- */
-.tw{overflow-x:auto; margin:16px 0; border:1px solid var(--rule); border-radius:4px}
-table{border-collapse:collapse; width:100%; font-size:15px}
-th{background:var(--ink); color:#fff; text-align:left; font-size:12.5px; letter-spacing:.04em; padding:9px 13px; white-space:nowrap}
-td{padding:9px 13px; border-bottom:1px solid var(--rule-soft); vertical-align:top}
+/* tables */
+.tw{overflow:auto; border:1px solid var(--rule); border-radius:4px; background:var(--paper)}
+table{border-collapse:collapse; width:100%; font-size:16px}
+th{position:sticky; top:0; background:var(--ink); color:#fff; text-align:left; font-size:13px;
+   padding:6px 10px; white-space:nowrap; z-index:1}
+td{padding:5px 10px; border-bottom:1px solid var(--rule-soft); vertical-align:top}
 tbody tr:nth-child(even){background:var(--sheet)}
 tbody tr:last-child td{border-bottom:0}
-.tag{display:inline-block; background:var(--ink); color:#fff; border-radius:3px; padding:1px 7px; font-size:12px; font-weight:700; letter-spacing:.03em}
+.tag{display:inline-block; background:var(--ink); color:#fff; border-radius:3px; padding:0 6px; font-size:.86em; font-weight:700}
 .yes{color:var(--keep); font-weight:700} .no{color:var(--co); font-weight:700}
+.hint{color:var(--ink-3); font-size:14px}
 
-/* ---------- grid ---------- */
-.g2{display:grid; grid-template-columns:1fr 1fr; gap:18px}
-.g3{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
-@media(max-width:820px){.g2,.g3{grid-template-columns:1fr}}
+/* stat row */
+.stats{display:flex; gap:calc(var(--gap) * 1.6); flex-wrap:wrap}
+.stats div{font-size:var(--kick); letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3)}
+.stats b{display:block; font-size:52px; color:var(--ink); line-height:1.05; letter-spacing:-.02em; font-variant-numeric:tabular-nums}
 
-/* ---------- the machine ---------- */
-.machine{background:var(--sheet); border:1px solid var(--rule); border-radius:6px; overflow:hidden; margin:26px 0}
-.m-bar{display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding:14px 18px; background:#fff; border-bottom:1px solid var(--rule)}
-.m-bar input[type=text]{flex:1 1 380px; min-width:0; font-family:var(--f); font-size:15px; padding:9px 12px; border:1px solid var(--rule); border-radius:3px; background:var(--sheet); color:var(--ink)}
-.m-bar input[type=text]:focus{background:#fff; border-color:var(--nc)}
-.m-bar textarea{flex:1 1 100%; min-width:0; font-family:var(--f); font-size:15px; line-height:1.55;
-  padding:9px 12px; border:1px solid var(--rule); border-radius:3px; background:var(--sheet); color:var(--ink);
-  resize:vertical; overflow:hidden; display:block}
-.m-bar textarea:focus{background:#fff; border-color:var(--nc); outline:none}
-.btn{font-family:var(--f); font-size:12.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:9px 15px;
-     border:1px solid var(--ink); border-radius:3px; background:var(--ink); color:#fff; cursor:pointer; line-height:1}
-.btn.ghost{background:#fff; color:var(--ink-2); border-color:var(--rule)}
-.btn.ghost:hover{border-color:var(--ink); color:var(--ink)}
-.btn:disabled{opacity:.4; cursor:default}
-
-.rail{display:flex; gap:0; padding:0; background:#fff; border-bottom:1px solid var(--rule); overflow-x:auto; scrollbar-width:none}
-.rail::-webkit-scrollbar{height:0}
-.step{flex:1 0 auto; min-width:118px; border:0; border-right:1px solid var(--rule); background:#fff; cursor:pointer;
-      padding:11px 12px; text-align:left; font-family:var(--f); position:relative; color:var(--ink-3)}
-.step:last-child{border-right:0}
-.step b{display:block; font-size:13.5px; color:var(--ink-2); line-height:1.25}
-.step span{display:block; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-4); margin-bottom:3px}
-.step:hover{background:var(--sheet)}
-.step.done{background:var(--sheet)}
-.step.done span{color:var(--keep)}
-.step.on{background:var(--nc); }
-.step.on b,.step.on span{color:#fff}
-.step.on::after{content:""; position:absolute; left:0; right:0; bottom:-1px; height:3px; background:var(--nc)}
-
-.m-body{padding:20px 22px; background:var(--sheet)}
-.m-head{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:4px}
-.m-head h3{margin:0; font-size:21px}
-.m-head .sref{font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--nc); text-decoration:none}
-.m-what{color:var(--ink-3); font-size:15.5px; margin:0 0 16px; max-width:80ch}
-.io{display:grid; grid-template-columns:1fr 1fr; gap:16px}
-@media(max-width:820px){.io{grid-template-columns:1fr}}
-.io .box{background:#fff; border:1px solid var(--rule); border-radius:4px; padding:12px 14px; min-height:96px}
-.io .box h5{margin:0 0 9px; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-4); font-weight:700}
-.stream{display:flex; flex-wrap:wrap; gap:5px}
-.tk{display:inline-flex; flex-direction:column; align-items:center; gap:2px; border:1px solid var(--rule); background:var(--sheet);
-    border-radius:3px; padding:3px 7px; font-size:14px; line-height:1.3}
-.tk u{text-decoration:none; font-size:9.5px; letter-spacing:.06em; color:var(--ink-4); font-weight:700}
-.tk.add{background:var(--keep-soft); border-color:var(--keep-line)}
-.tk.del{background:var(--co-soft); border-color:var(--co-line); color:var(--co); text-decoration:line-through; opacity:.75}
-.tk.chg{background:var(--nc-soft); border-color:var(--nc-line)}
-.tk.ent{background:var(--warn-soft); border-color:var(--warn-line)}
-.tk.ent u{color:var(--warn)}
-.raw{font-size:15.5px; line-height:1.7}
-.stat{display:flex; flex-wrap:wrap; gap:18px; margin-top:16px; padding-top:14px; border-top:1px solid var(--rule)}
-.stat div{font-size:13px; color:var(--ink-3)}
-.stat b{display:block; font-size:22px; color:var(--ink); line-height:1.1; font-variant-numeric:tabular-nums}
-.toggle{display:inline-flex; align-items:center; gap:8px; font-size:14px; color:var(--ink-2); cursor:pointer; margin-top:14px;
-        background:#fff; border:1px solid var(--rule); border-radius:3px; padding:8px 12px}
-.toggle input{accent-color:var(--nc); width:16px; height:16px}
-.m-note{margin-top:14px; font-size:14.5px; color:var(--ink-3)}
-.m-note strong{color:var(--ink)}
-.bars{display:flex; flex-direction:column; gap:5px; margin-top:4px}
-.bars .row{display:grid; grid-template-columns:minmax(78px,auto) 1fr 52px; gap:9px; align-items:center; font-size:13px}
-.bars .bar{height:14px; background:var(--nc); border-radius:2px; min-width:2px}
-.bars .n{text-align:right; color:var(--ink-3); font-variant-numeric:tabular-nums}
-
-/* ---------- misc widgets ---------- */
-.try{display:flex; flex-wrap:wrap; gap:9px; align-items:center; margin:14px 0}
-.try input{font-family:var(--f); font-size:15px; padding:8px 11px; border:1px solid var(--rule); border-radius:3px; background:#fff; min-width:200px}
-.out{font-family:var(--f); font-size:15px}
-.pill{display:inline-block; border:1px solid var(--rule); background:#fff; border-radius:999px; padding:4px 11px; font-size:13.5px; margin:0 5px 6px 0; cursor:pointer}
-.pill.off{opacity:.45; text-decoration:line-through}
-.pill.stop{background:var(--co-soft); border-color:var(--co-line)}
-svg.fig{display:block; width:100%; height:auto; background:#fff; border:1px solid var(--rule); border-radius:4px; margin:16px 0}
+/* svg figures */
+svg.fig{display:block; width:100%; height:100%; max-height:100%; background:var(--paper)}
+.figwrap{min-height:0; height:100%; display:flex; align-items:center; justify-content:center}
 svg text{font-family:var(--f)}
-.cards{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:20px 0}
-@media(max-width:820px){.cards{grid-template-columns:1fr}}
-.flip{background:var(--sheet); border:1px solid var(--rule); border-radius:5px; padding:18px; cursor:pointer; min-height:132px}
-.flip b{display:block; font-size:16px; margin-bottom:8px}
-.flip p{margin:0; font-size:15px; color:var(--ink-3)}
-.flip .a{display:none} .flip.open .a{display:block} .flip.open .q{display:none}
-.flip .tap{font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--nc); font-weight:700; margin-top:10px; display:block}
-footer{padding:44px 0 70px; color:var(--ink-3); font-size:14.5px}
-footer b{color:var(--ink)}
-.lastline{margin-top:10px; font-style:italic}
 
-/* ---------- plain-language layer ---------- */
-.plain{display:grid; grid-template-columns:auto 1fr; gap:16px; align-items:start; background:var(--paper);
-  border:1px solid var(--keep-line); border-left:4px solid var(--keep); border-radius:0 5px 5px 0; padding:16px 20px; margin:18px 0}
-.plain .lbl{font-size:10.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--keep); white-space:nowrap; padding-top:5px}
-.plain p{margin:0 0 9px; font-size:17.5px; line-height:1.62}
-.plain p:last-child{margin-bottom:0}
-.plain em{font-style:normal; background:var(--keep-soft); padding:0 4px; border-radius:2px}
-@media(max-width:700px){.plain{grid-template-columns:1fr; gap:7px}}
-
-/* ---------- ladder infographic ---------- */
-.ladder{border:1px solid var(--rule); border-radius:6px; overflow:hidden; margin:22px 0}
-.lrow{display:grid; grid-template-columns:210px minmax(0,1fr); border-top:1px solid var(--rule)}
-.lrow:first-child{border-top:0}
-.lhead{background:var(--sheet); padding:13px 16px; border-right:1px solid var(--rule)}
-.lhead i{display:inline-block; font-style:normal; width:23px; height:23px; border-radius:50%; background:var(--ink); color:#fff;
-  font-size:12px; font-weight:700; text-align:center; line-height:23px; margin-bottom:6px}
-.lhead b{display:block; font-size:16px; line-height:1.25}
-.lhead span{display:block; font-size:12.5px; color:var(--ink-3); margin-top:3px}
-.lbody{padding:13px 16px; min-width:0; background:var(--paper)}
-.lcount{font-size:12.5px; color:var(--ink-4); margin-top:8px}
-.lcount b{color:var(--ink)}
-@media(max-width:700px){.lrow{grid-template-columns:1fr} .lhead{border-right:0; border-bottom:1px solid var(--rule)}}
-
-/* ---------- glossary ---------- */
-.gloss{display:grid; grid-template-columns:repeat(auto-fill,minmax(285px,1fr)); gap:15px}
-.gterm{background:var(--sheet); border:1px solid var(--rule); border-radius:5px; padding:14px 17px}
-.gterm b{display:block; font-size:16.5px; margin-bottom:5px}
-.gterm span{font-size:15px; color:var(--ink-3)}
-.gterm em{font-style:normal; color:var(--ink-2); background:var(--sheet-2); padding:0 4px; border-radius:2px}
+/* ---------- bottom ---------- */
+.bot{display:flex; align-items:center; gap:12px; padding:5px 14px; background:var(--sheet); border-top:1px solid var(--rule); flex:0 0 auto; min-width:0}
+.nav-b{font-family:var(--f); font-size:14px; font-weight:700; background:var(--paper); border:1px solid var(--rule); color:var(--ink-2);
+       width:30px; height:26px; border-radius:2px; cursor:pointer; line-height:1}
+.nav-b:hover{background:var(--ink); color:#fff; border-color:var(--ink)}
+.nav-b:disabled{opacity:.35; cursor:default}
+.count{font-size:12px; font-variant-numeric:tabular-nums; color:var(--ink-3); white-space:nowrap}
+.count b{color:var(--ink)}
+.where{flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; color:var(--ink-3)}
+.prog{flex:0 0 clamp(90px,22vw,320px); height:4px; background:var(--sheet-3); border-radius:2px; overflow:hidden}
+.prog i{display:block; height:100%; background:var(--nc); width:0; transition:width .2s}
+.keys{font-size:11px; color:var(--ink-4); white-space:nowrap}
+@media(max-width:760px){.keys{display:none} .brand span{display:none}}
 
 /* ---------- rules applied at this step ---------- */
 .rules{margin-top:18px; border-top:1px solid var(--rule); padding-top:14px}
@@ -219,356 +148,443 @@ footer b{color:var(--ink)}
 .rules .tk{font-size:12.5px; padding:1px 5px}
 .rules .tk u{font-size:8.5px}
 
-@media print{.top{position:static} .machine{break-inside:avoid}}
+/* ---------- widgets (shared with the scroll site) ---------- */
+.machine{background:var(--sheet); border:1px solid var(--rule); border-radius:5px; overflow:hidden; display:flex; flex-direction:column; min-height:0; height:100%}
+.m-bar{display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:7px 10px; background:var(--paper); border-bottom:1px solid var(--rule); flex:0 0 auto}
+.m-bar input[type=text]{flex:1 1 300px; min-width:0; font-family:var(--f); font-size:15px; padding:6px 9px;
+  border:1px solid var(--rule); border-radius:3px; background:var(--sheet); color:var(--ink)}
+.m-bar input[type=text]:focus{background:#fff; border-color:var(--nc)}
+.m-bar textarea{flex:1 1 100%; min-width:0; font-family:var(--f); font-size:15px; line-height:1.5;
+  padding:6px 9px; border:1px solid var(--rule); border-radius:3px; background:var(--sheet); color:var(--ink);
+  resize:none; overflow:auto; display:block; max-height:150px}
+.m-bar textarea:focus{background:#fff; border-color:var(--nc); outline:none}
+.btn{font-family:var(--f); font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+     padding:7px 12px; border:1px solid var(--ink); border-radius:3px; background:var(--ink); color:#fff; cursor:pointer; line-height:1}
+.btn.ghost{background:var(--paper); color:var(--ink-2); border-color:var(--rule)}
+.btn.ghost:hover{border-color:var(--ink); color:var(--ink)}
+.rail{display:flex; background:var(--paper); border-bottom:1px solid var(--rule); overflow-x:auto; scrollbar-width:none; flex:0 0 auto}
+.rail::-webkit-scrollbar{height:0}
+.step{flex:1 0 auto; min-width:96px; border:0; border-right:1px solid var(--rule); background:var(--paper); cursor:pointer;
+      padding:6px 9px; text-align:left; font-family:var(--f); position:relative; color:var(--ink-3)}
+.step:last-child{border-right:0}
+.step b{display:block; font-size:13.5px; color:var(--ink-2); line-height:1.2}
+.step span{display:block; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-4); margin-bottom:2px}
+.step:hover{background:var(--sheet)}
+.step.done{background:var(--sheet)} .step.done span{color:var(--keep)}
+.step.on{background:var(--nc)} .step.on b,.step.on span{color:#fff}
+.m-body{padding:calc(var(--gap) * .8) calc(var(--gap) * 1.1); background:var(--sheet); min-height:0; overflow:auto; flex:1 1 auto}
+.m-head{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap}
+.m-head h3{font-size:var(--h3)}
+.m-head .sref{font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--nc); text-decoration:none}
+.m-what{color:var(--ink-3); font-size:15px; margin:4px 0 8px; max-width:95ch}
+.io{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.io .box{background:var(--paper); border:1px solid var(--rule); border-radius:4px; padding:8px 10px; min-height:132px}
+.io .box h5{margin:0 0 6px; font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-4); font-weight:700}
+.stream{display:flex; flex-wrap:wrap; gap:4px}
+.tk{display:inline-flex; flex-direction:column; align-items:center; gap:1px; border:1px solid var(--rule); background:var(--sheet);
+    border-radius:3px; padding:2px 6px; font-size:14px; line-height:1.25}
+.tk u{text-decoration:none; font-size:8.5px; letter-spacing:.05em; color:var(--ink-4); font-weight:700}
+.tk.add{background:var(--keep-soft); border-color:var(--keep-line)}
+.tk.del{background:var(--co-soft); border-color:var(--co-line); color:var(--co); text-decoration:line-through; opacity:.75}
+.tk.chg{background:var(--nc-soft); border-color:var(--nc-line)}
+.tk.ent{background:var(--warn-soft); border-color:var(--warn-line)} .tk.ent u{color:var(--warn)}
+.raw{font-size:16px; line-height:1.6}
+.stat{display:flex; flex-wrap:wrap; gap:14px; margin-top:9px; padding-top:8px; border-top:1px solid var(--rule)}
+.stat div{font-size:10.5px; color:var(--ink-3); letter-spacing:.06em; text-transform:uppercase}
+.stat b{display:block; font-size:26px; color:var(--ink); line-height:1.1; font-variant-numeric:tabular-nums; letter-spacing:-.01em}
+.toggle{display:inline-flex; align-items:center; gap:7px; font-size:14px; color:var(--ink-2); cursor:pointer;
+        margin-top:9px; background:var(--paper); border:1px solid var(--rule); border-radius:3px; padding:6px 10px}
+.toggle input{accent-color:var(--nc); width:15px; height:15px}
+.m-note{margin-top:9px; font-size:14.5px; color:var(--ink-3)}
+.m-note strong{color:var(--ink)}
+.bars{display:flex; flex-direction:column; gap:3px}
+.bars .row{display:grid; grid-template-columns:minmax(64px,auto) 1fr 40px; gap:8px; align-items:center; font-size:13px}
+.bars .bar{height:11px; background:var(--nc); border-radius:2px; min-width:2px}
+.bars .n{text-align:right; color:var(--ink-3); font-variant-numeric:tabular-nums}
+.pill{display:inline-block; border:1px solid var(--rule); background:var(--paper); border-radius:999px; padding:3px 10px;
+      font-size:15px; margin:0 4px 5px 0; cursor:pointer}
+.pill.off{opacity:.45; text-decoration:line-through}
+.pill.stop{background:var(--co-soft); border-color:var(--co-line)}
+.flip{background:var(--sheet); border:1px solid var(--rule); border-radius:5px; padding:calc(var(--gap)); cursor:pointer}
+.flip b{display:block; font-size:var(--h3); margin-bottom:7px}
+.flip p{margin:0; color:var(--ink-3)}
+.flip .a{display:none} .flip.open .a{display:block} .flip.open .q{display:none}
+.flip .tap{display:block; margin-top:9px; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--nc); font-weight:700}
 </style>
 
+<div class="app">
 <header class="top">
-  <div class="top-in">
-    <div class="brand"><b>The Classic NLP Pipeline</b><span>Raw text &rarr; numeric vectors</span></div>
-    <nav class="nav" id="nav">
-      <a href="#machine">Pipeline</a>
-      <a href="#picture">In one picture</a>
-      <a href="#what">1 What NLP is</a>
-      <a href="#why">2 Why a pipeline</a>
-      <a href="#normalize">3 Normalize</a>
-      <a href="#token">4 Tokenize</a>
-      <a href="#stem">5 Stem / Lemma</a>
-      <a href="#stop">6 Stopwords</a>
-      <a href="#pos">7 POS</a>
-      <a href="#parse">8 Parsing</a>
-      <a href="#ner">9 NER</a>
-      <a href="#vec">10 Vectorize</a>
-      <a href="#order">11 Ordering</a>
-      <a href="#code">12 Code</a>
-      <a href="#nltk">13 NLTK</a>
-      <a href="#cold">14 Cold</a>
-      <a href="#words">Jargon</a>
-    </nav>
-    <a class="deckbtn" href="deck.html" title="Present this as slides">Deck &#8599;</a>
-  </div>
+  <div class="brand"><b>The Classic NLP Pipeline</b><span>Lecture deck</span></div>
+  <div class="chips" id="chips"></div>
+  <button class="tbtn" id="fs" title="Fullscreen (F)">&#9974; Full screen</button>
+  <a class="tbtn" href="notes.html" title="Open the scrollable notes">Notes &rarr;</a>
 </header>
 
-<div class="wrap">
-  <div class="hero">
-    <div class="kicker">Computer Science &middot; Artificial Intelligence</div>
-    <h1>Natural Language<br>Processing</h1>
-    <p class="sub">A computer cannot read. It can only count. This page shows, step by step, how a sentence you wrote is turned into a list of numbers a machine can learn from.</p>
-    <div class="funnel">
-      <span>raw text</span><i>&rarr;</i>
-      <span>clean text</span><i>&rarr;</i>
-      <span>tokens</span><i>&rarr;</i>
-      <span>normalized tokens</span><i>&rarr;</i>
-      <span>filtered tokens</span><i>&rarr;</i>
-      <span class="end">numbers</span>
+<main class="stage" id="stage">
+<div class="slidebox" id="slidebox">
+<div class="pagenum" id="pagenum"></div>
+
+<section class="s" data-sec="0">
+  <div class="head"><div class="kick">Computer Science &middot; Artificial Intelligence</div></div>
+  <div class="body center">
+    <h1 style="font-size:var(--h1)">Natural Language<br>Processing</h1>
+    <p class="lead" style="margin-top:.5em">The classic pipeline &mdash; from raw text to numeric vectors.</p>
+    <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:var(--gap)">
+      <span class="pill">Tokenization</span><span class="pill">Stemming</span><span class="pill">Lemmatization</span>
+      <span class="pill">Stopwords</span><span class="pill">POS</span><span class="pill">Parsing</span>
+      <span class="pill">NER</span><span class="pill">Vectorization</span>
+    </div>
+    <div class="by">Use &larr; &rarr; to move &middot; press F for full screen</div>
+  </div>
+</section>
+
+<section class="s" data-sec="0">
+  <div class="head"><div class="kick">Agenda</div><h2>Fourteen stops, one sentence</h2></div>
+  <div class="body cols2">
+    <ol style="font-size:var(--big); line-height:1.5">
+      <li><b>What NLP is</b> <span class="hint">&mdash; definition, difficulty</span></li>
+      <li><b>Why a pipeline exists</b> <span class="hint">&mdash; text to numbers</span></li>
+      <li><b>Text normalization</b> <span class="hint">&mdash; the unnamed step 0</span></li>
+      <li><b>Tokenization</b> <span class="hint">&mdash; word, character, subword</span></li>
+      <li><b>Stemming vs. lemmatization</b></li>
+      <li><b>Stopword removal</b> <span class="hint">&mdash; and when it ruins you</span></li>
+      <li><b>POS tagging</b> <span class="hint">&mdash; Penn Treebank, HMM</span></li>
+    </ol>
+    <ol start="8" style="font-size:var(--big); line-height:1.5">
+      <li><b>Parsing</b> <span class="hint">&mdash; constituency, dependency</span></li>
+      <li><b>NER</b> <span class="hint">&mdash; entity types, BIO</span></li>
+      <li><b>Vectorization</b> <span class="hint">&mdash; BoW, TF-IDF, Word2Vec</span></li>
+      <li><b>Pipeline ordering</b> <span class="hint">&mdash; what to skip</span></li>
+      <li><b>Full code</b></li>
+      <li><b>NLTK</b> <span class="hint">&mdash; and spaCy</span></li>
+      <li><b>Three things to say cold</b></li>
+    </ol>
+  </div>
+</section>
+
+<section class="s" data-sec="1">
+  <div class="head"><div class="kick">01 &middot; What NLP is</div><h2>The definition</h2></div>
+  <div class="body mid">
+    <p class="lead"><strong>Natural Language Processing</strong> is the subfield of computer science and artificial intelligence concerned with getting machines to <strong>read, understand and generate human language</strong> &mdash; English, Hindi, Bengali &mdash; as opposed to formal or programming languages.</p>
+    <div class="note" style="margin-top:var(--gap)">
+      <h4>The evolution in one line</h4>
+      <p>Hand-written rules &rarr; statistical models (HMM, CRF) &rarr; RNN / LSTM &rarr; <strong>Transformers</strong> (2017, <em>Attention Is All You Need</em>) &rarr; BERT, GPT and today's large language models.</p>
     </div>
   </div>
-</div>
+</section>
 
-<div class="wrap">
-<section id="machine" style="border-bottom:1px solid var(--rule)">
-  <div class="sec-head"><div class="sec-no">THE MACHINE</div></div>
-  <h2>Watch one sentence go all the way through</h2>
-  <p class="lede">Type any sentence. Step through the seven stages and watch tokens get split, tagged, collapsed, dropped and finally counted into a vector. Every stage below has its own section further down the page.</p>
+<section class="s" data-sec="1">
+  <div class="head"><div class="kick">01 &middot; What NLP is</div><h2>Why it is hard</h2></div>
+  <div class="body cols2">
+    <div>
+      <p class="lead">Human language is <strong>ambiguous, context-dependent and unstructured</strong>.</p>
+      <div class="note warn" style="margin-top:var(--gap)">
+        <h4>One sentence, several readings</h4>
+        <p style="font-size:var(--big)">"I saw a man on a hill with a telescope"</p>
+      </div>
+    </div>
+    <div class="card">
+      <h4>And on the other side</h4>
+      <p>Computers can only compute over <strong>numbers</strong>. Text must become a numeric representation before any model can touch it.</p>
+      <p style="margin-top:.8em"><strong>The entire classic pipeline exists to bridge those two facts.</strong></p>
+    </div>
+  </div>
+</section>
 
-  <div class="machine">
-    <div class="m-bar">
-      <textarea id="inp" rows="3" spellcheck="false" aria-label="Input sentence">Meera's students weren't loving the &lt;b&gt;NLP&lt;/b&gt; batches in 2023, but they're saying she'll quickly fix 12 trending queries; I'm nervous we've asked twice, Satyaki can't delay and won't cancel those projects at Classroom Tech in Bengaluru, and the café  review is overdue.</textarea>
-      <button class="btn" id="run">Run all</button>
-      <button class="btn ghost" id="stepb">Step &rarr;</button>
-      <button class="btn ghost" id="reset">Reset</button>
+<section class="s" data-sec="1">
+  <div class="head"><div class="kick">01 &middot; What NLP is</div><h2>Common tasks</h2></div>
+  <div class="body">
+    <div class="tw"><table>
+      <tr><th>Task</th><th>Example</th></tr>
+      <tr><td>Text classification</td><td>spam vs. not spam</td></tr>
+      <tr><td>Sentiment analysis</td><td>product review &rarr; positive / negative</td></tr>
+      <tr><td>Machine translation</td><td>English &rarr; Bengali</td></tr>
+      <tr><td>Named Entity Recognition</td><td>"Satyaki works at X" &rarr; Person, Organization</td></tr>
+      <tr><td>Summarization</td><td>article &rarr; three lines</td></tr>
+      <tr><td>Question answering</td><td>search engines, chatbots</td></tr>
+      <tr><td>Speech-to-text</td><td>voice assistants</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section class="s" data-sec="1">
+  <div class="head"><div class="kick">01 &middot; What NLP is</div></div>
+  <div class="body center">
+    <div class="by">The one-line answer for an interview</div>
+    <p class="quote" style="margin-top:.4em">NLP bridges human language and machine understanding &mdash; converting <em>unstructured text</em> into structured representations a computer can process, and generating human-readable language back.</p>
+  </div>
+</section>
+
+<section class="s" data-sec="2">
+  <div class="head"><div class="kick">02 &middot; Why a pipeline exists</div><h2>A computer cannot do arithmetic on <code>"teaching"</code></h2>
+    <p class="sub">Models take fixed-length numeric vectors. The pipeline is a funnel &mdash; every stage cuts noise and vocabulary.</p></div>
+  <div class="body figwrap">
+    <svg class="fig" viewBox="0 0 980 190" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Funnel from raw text to numbers"><g id="funnelg"></g></svg>
+  </div>
+</section>
+
+<section class="s" data-sec="2">
+  <div class="head"><div class="kick">02 &middot; Why a pipeline exists</div><h2>The running example</h2></div>
+  <div class="body center">
+    <p class="quote" style="max-width:26ch">"Satyaki was teaching NLP classes at Classroom Tech in Bengaluru, and the students weren't loving it."</p>
+    <p class="lead" style="margin-top:var(--gap)">Every stage from here on transforms <strong>this one sentence</strong>, step by step, until it is a vector of numbers.</p>
+    <div class="note good" style="margin-top:var(--gap)">
+      <p><strong>Vocabulary size is the thing being managed.</strong> In Bag-of-Words every unique word is a column. Cutting 50,000 words to 12,000 shrinks the matrix 4&times;, trains faster, overfits less.</p>
+    </div>
+  </div>
+</section>
+
+<section class="s" data-sec="2">
+  <div class="head"><div class="kick">02 &middot; Live demo</div><h2>Watch it go all the way through</h2><p class="sub">The sentence is overstuffed on purpose, so that 49 of the 52 rules below fire on it.</p></div>
+  <div class="body" style="overflow:hidden">
+    <div class="machine">
+      <div class="m-bar">
+        <textarea id="inp" rows="3" spellcheck="false" aria-label="Input sentence">Meera's students weren't loving the &lt;b&gt;NLP&lt;/b&gt; batches in 2023, but they're saying she'll quickly fix 12 trending queries; I'm nervous we've asked twice, Satyaki can't delay and won't cancel those projects at Classroom Tech in Bengaluru, and the café  review is overdue.</textarea>
+        <button class="btn" id="run">Run all</button>
+        <button class="btn ghost" id="stepb">Step &rarr;</button>
+        <button class="btn ghost" id="reset">Reset</button>
         <button class="btn ghost" id="ex-simple" title="A short, natural sentence">Simple sentence</button>
         <button class="btn ghost" id="ex-all" title="Fires every rule in every stage">Every-rule sentence</button>
-    </div>
-    <div class="rail" id="rail"></div>
-    <div class="m-body">
-      <div class="m-head"><h3 id="s-title">Raw text</h3><a class="sref" id="s-ref" href="#what">read the section &rarr;</a></div>
-      <p class="m-what" id="s-what"></p>
-      <div class="io">
-        <div class="box"><h5>Before</h5><div id="s-before"></div></div>
-        <div class="box"><h5>After</h5><div id="s-after"></div></div>
       </div>
-      <div id="s-extra"></div>
-      <div class="stat" id="s-stat"></div>
-      <div class="m-note" id="s-note"></div>
+      <div class="rail" id="rail"></div>
+      <div class="m-body">
+        <div class="m-head"><h3 id="s-title">Raw text</h3><a class="sref" id="s-ref" href="#">&nbsp;</a></div>
+        <p class="m-what" id="s-what"></p>
+        <div class="io">
+          <div class="box"><h5>Before</h5><div id="s-before"></div></div>
+          <div class="box"><h5>After</h5><div id="s-after"></div></div>
+        </div>
+        <div id="s-extra"></div>
+        <div class="stat" id="s-stat"></div>
+        <div class="m-note" id="s-note"></div>
         <div id="s-rules"></div>
-    </div>
-  </div>
-  <p class="hint"><strong>About the sentence in the box.</strong> It is overstuffed on purpose &mdash; an HTML tag, an
-  accented letter stored the awkward way, a double space, all seven contractions, two numbers, a possessive, and a word for
-  every suffix rule &mdash; so that <strong>49 of the 52 rules</strong> listed below actually fire on it. The other three need a
-  nudge: tick <em>Lowercase now</em> at Normalize, tick <em>Keep the negations</em> at Stopwords, and idf needs a whole corpus,
-  which is what the live matrix in &sect;10c is for. Press <strong>Simple sentence</strong> for the short one used elsewhere on this page.</p>
-  <p class="hint">The taggers, lemmatizer and entity recogniser here are small teaching implementations — a lexicon plus suffix and capitalization rules — not NLTK or spaCy. They behave the way the real thing behaves on ordinary sentences, and they break in the same places, which is the point.</p>
-</section>
-
-<section id="picture">
-  <div class="sec-head"><div class="sec-no">THE WHOLE IDEA</div></div>
-  <h2>One sentence, seven cuts</h2>
-  <p class="lede">The same sentence at every stage, all on one screen. <span class="no">Red and struck through</span> = thrown away. <span style="background:var(--nc-soft);border:1px solid var(--nc-line);border-radius:2px;padding:0 4px">Blue</span> = changed. <span style="background:var(--keep-soft);border:1px solid var(--keep-line);border-radius:2px;padding:0 4px">Green</span> = kept.</p>
-  <div class="ladder" id="ladder"></div>
-  <div class="plain"><div class="lbl">In plain words</div><div>
-    <p>Read down the ladder: the sentence gets <em>shorter and simpler</em> at every step, until nothing is left but numbers.</p>
-    <p>That is the whole subject in one idea &mdash; <em>throw away everything the machine does not need, then count what is left.</em></p>
-  </div></div>
-</section>
-
-
-<section id="what">
-  <div class="sec-head"><div class="sec-no">01</div><h2>What is NLP?</h2></div>
-  <div class="plain"><div class="lbl">In plain words</div><div>
-    <p>Computers are brilliant with numbers and helpless with sentences. NLP is the part of AI that teaches them to deal with the way <em>people</em> actually write and speak.</p>
-    <p>Every example on this page &mdash; is this review happy or angry, who is named in this paragraph, what does this mean in Bengali &mdash; is the same problem underneath: <em>language in, decision out</em>.</p>
-  </div></div>
-  <p class="lede"><strong>Natural Language Processing</strong> is the subfield of computer science and artificial intelligence concerned with getting machines to read, understand and generate <em>human</em> language — English, Hindi, Bengali — as opposed to formal or programming languages.</p>
-
-  <div class="g2">
-    <div>
-      <h4>Why it is hard</h4>
-      <p>Human language is <strong>ambiguous, context-dependent and unstructured</strong>. The sentence <em>"I saw a man on a hill with a telescope"</em> has several grammatically valid readings. Meanwhile computers can only compute over numbers — so text must be converted into a numeric representation before any model can touch it. The entire classic pipeline exists to bridge those two facts.</p>
-      <h4>The evolution in one line</h4>
-      <p>Hand-written rules &rarr; statistical models (HMM, CRF) &rarr; RNN/LSTM &rarr; <strong>Transformers</strong> (2017, <em>Attention Is All You Need</em>) &rarr; BERT, GPT and today's large language models.</p>
-    </div>
-    <div>
-      <h4>Common tasks</h4>
-      <div class="tw"><table>
-        <tr><th>Task</th><th>Example</th></tr>
-        <tr><td>Text classification</td><td>spam vs. not spam</td></tr>
-        <tr><td>Sentiment analysis</td><td>product review &rarr; positive / negative</td></tr>
-        <tr><td>Machine translation</td><td>English &rarr; Bengali</td></tr>
-        <tr><td>Named Entity Recognition</td><td>"Satyaki works at X" &rarr; Person, Organization</td></tr>
-        <tr><td>Summarization</td><td>article &rarr; three lines</td></tr>
-        <tr><td>Question answering</td><td>search engines, chatbots</td></tr>
-        <tr><td>Speech-to-text</td><td>voice assistants</td></tr>
-      </table></div>
-    </div>
-  </div>
-
-  <div class="note">
-    <h4>The one-line answer for an interview</h4>
-    <p>NLP is the branch of AI that bridges human language and machine understanding — converting unstructured text into structured representations a computer can process, and generating human-readable language back.</p>
-  </div>
-</section>
-
-<section id="why">
-  <div class="sec-head"><div class="sec-no">02</div><h2>Why a pipeline exists at all</h2></div>
-  <div class="plain"><div class="lbl">In plain words</div><div>
-    <p>A calculator cannot add up the word <code>teaching</code>. So before any learning can happen, the sentence has to become numbers.</p>
-    <p>It is done in small steps, like a factory line. Each step <em>throws away something the machine does not need</em>, so the final list of numbers is short enough to work with.</p>
-  </div></div>
-  <p class="lede">A computer cannot do arithmetic on the string <code>"teaching"</code>. Machine learning models take <strong>fixed-length numeric vectors</strong> as input. The classic pipeline is a funnel.</p>
-
-  <svg class="fig" viewBox="0 0 980 190" role="img" aria-label="Funnel from raw text to numbers, each stage narrower than the last">
-    <g id="funnelg"></g>
-  </svg>
-
-  <p>Each stage reduces noise and, critically, <strong>vocabulary size</strong>. Vocabulary size matters enormously: in Bag-of-Words every unique word becomes a column. Cutting 50,000 unique words down to 12,000 shrinks the feature matrix 4&times;, trains faster, and overfits less.</p>
-
-  <div class="note good">
-    <h4>Running example</h4>
-    <p><code>"Satyaki was teaching NLP classes at Classroom Tech in Bengaluru, and the students weren't loving it."</code></p>
-    <p>Every stage on this page transforms this one sentence, step by step, until it becomes a vector of numbers a model can learn from.</p>
-  </div>
-</section>
-
-<section id="normalize">
-  <div class="sec-head"><div class="sec-no">03</div><h2>Text normalization — the unnamed step 0</h2></div>
-  <div class="plain"><div class="lbl">In plain words</div><div>
-    <p>Cleaning up &mdash; the same idea as tidying your notes before you study from them.</p>
-    <p>Make <code>NLP</code> and <code>nlp</code> the same word, open <code>weren't</code> into <code>were not</code>, and strip out web junk. But do not clean <em>too</em> hard: for judging a happy or angry review, <code>!!!</code> is useful information.</p>
-  </div></div>
-  <p class="lede">Before tokenizing, text is usually cleaned. Four operations, each with a trap attached.</p>
-
-  <div class="g2">
-    <div class="card">
-      <h4 style="margin-top:0">Lowercasing</h4>
-      <p><code>"NLP"</code> and <code>"nlp"</code> should be one token. But beware: <code>US</code> (country) vs <code>us</code> (pronoun), <code>Apple</code> vs <code>apple</code>. Lowercasing destroys that distinction — which is exactly why NER runs <em>before</em> lowercasing.</p>
-    </div>
-    <div class="card">
-      <h4 style="margin-top:0">Removing HTML, URLs, emojis, punctuation</h4>
-      <p>Task-dependent. For sentiment analysis <code>!!!</code> and emoji are <em>signal</em>, not noise. Do not blindly strip.</p>
-    </div>
-    <div class="card">
-      <h4 style="margin-top:0">Expanding contractions</h4>
-      <p><code>weren't</code> &rarr; <code>were not</code>, <code>it's</code> &rarr; <code>it is</code>. This keeps the negation visible to later stages instead of hiding it inside a clitic.</p>
-    </div>
-    <div class="card">
-      <h4 style="margin-top:0">Unicode normalization</h4>
-      <p><code>café</code> can be encoded two different ways (é as a single codepoint, or e + combining accent). <code>unicodedata.normalize('NFKC', text)</code> resolves it.</p>
+      </div>
     </div>
   </div>
 </section>
 
-<section id="token">
-  <div class="sec-head"><div class="sec-no">04</div><h2><span class="tag">1</span> Tokenization</h2></div>
-  <div class="plain"><div class="lbl">In plain words</div><div>
-    <p>Cutting the sentence into pieces. A piece is usually a word &mdash; but not always.</p>
-    <p><code>don't</code> is really two ideas, <code>do</code> + <code>n't</code>, and <code>New York</code> is one idea in two words. Getting the cuts right matters, because <em>every later step works on these pieces</em>, not on the original sentence.</p>
-  </div></div>
-  <p class="lede"><strong>What it does:</strong> splits a string into atomic units called <em>tokens</em>.</p>
-  <pre>["Satyaki", "was", "teaching", "NLP", "classes", "at", "Classroom", "Tech",
+<section class="s" data-sec="3">
+  <div class="head"><div class="kick">03 &middot; Normalization</div><h2>The unnamed step 0</h2>
+    <p class="sub">Four cleaning operations &mdash; each with a trap attached.</p></div>
+  <div class="body cols2">
+    <div class="card"><h4>Lowercasing</h4><p><code>"NLP"</code> and <code>"nlp"</code> should be one token. But <code>US</code> (country) vs <code>us</code> (pronoun), <code>Apple</code> vs <code>apple</code> &mdash; which is exactly why <strong>NER runs before lowercasing</strong>.</p></div>
+    <div class="card"><h4>Removing HTML, URLs, emoji, punctuation</h4><p>Task-dependent. For sentiment analysis <code>!!!</code> and emoji are <em>signal</em>, not noise. Do not blindly strip.</p></div>
+    <div class="card"><h4>Expanding contractions</h4><p><code>weren't</code> &rarr; <code>were not</code>, <code>it's</code> &rarr; <code>it is</code>. Keeps the negation visible instead of hiding it inside a clitic.</p></div>
+    <div class="card"><h4>Unicode normalization</h4><p><code>café</code> has two encodings (é as one codepoint, or e + combining accent). <code>unicodedata.normalize('NFKC', text)</code> resolves it.</p></div>
+  </div>
+</section>
+
+<section class="s" data-sec="4">
+  <div class="head"><div class="kick">04 &middot; Tokenization &mdash; stage 1</div><h2>Split the string into atomic units</h2></div>
+  <div class="body mid">
+    <pre>["Satyaki", "was", "teaching", "NLP", "classes", "at", "Classroom", "Tech",
  "in", "Bengaluru", ",", "and", "the", "students", "were", "n't", "loving", "it", "."]</pre>
-
-  <h3>Why <code>text.split(" ")</code> fails immediately</h3>
-  <div class="tw"><table>
-    <tr><th>Input</th><th>Naive split gives</th><th>Problem</th></tr>
-    <tr><td><code>don't</code></td><td><code>don't</code></td><td>should be <code>do</code> + <code>n't</code></td></tr>
-    <tr><td><code>New York</code></td><td><code>New</code>, <code>York</code></td><td>one entity, split into two</td></tr>
-    <tr><td><code>U.S.A.</code></td><td><code>U.S.A.</code></td><td>is the final <code>.</code> a sentence end?</td></tr>
-    <tr><td><code>state-of-the-art</code></td><td>one token</td><td>or four?</td></tr>
-    <tr><td><code>&#8377;1,50,000</code></td><td>breaks on comma</td><td>number destroyed</td></tr>
-    <tr><td>Chinese / Japanese</td><td>whole sentence</td><td><strong>no spaces at all</strong></td></tr>
-  </table></div>
-
-  <h3>Three levels of granularity</h3>
-  <div class="tw"><table>
-    <tr><th>Level</th><th>"unhappiness" becomes</th><th>Vocab size</th><th>Trade-off</th></tr>
-    <tr><td><strong>Word</strong></td><td><code>unhappiness</code></td><td>50k – 1M</td><td>Out-Of-Vocabulary problem — an unseen word at test time becomes <code>&lt;UNK&gt;</code> and its information is lost</td></tr>
-    <tr><td><strong>Character</strong></td><td><code>u, n, h, a, p, …</code></td><td>~100</td><td>No OOV ever, but sequences get very long and meaning is diluted</td></tr>
-    <tr><td><strong>Subword</strong></td><td><code>un + happi + ness</code></td><td>~30k</td><td>Best of both — the sweet spot, used by every modern model</td></tr>
-  </table></div>
-
-  <h3>Subword tokenization — BPE, run it yourself</h3>
-  <p><strong>Byte Pair Encoding</strong> (and its cousins WordPiece and SentencePiece) is what BERT and GPT actually use. It starts from characters and greedily merges the most frequent adjacent pair, repeatedly.</p>
-  <div class="machine">
-    <div class="m-bar">
-      <input type="text" id="bpe-corpus" value="low low lower lowest" aria-label="BPE corpus">
-      <button class="btn" id="bpe-step">Merge next pair</button>
-      <button class="btn ghost" id="bpe-reset">Reset</button>
-    </div>
-    <div class="m-body">
-      <div id="bpe-out"></div>
-      <div class="m-note" id="bpe-note"></div>
+    <div class="note" style="margin-top:var(--gap)">
+      <p>Note <code>weren't</code> became <code>were</code> + <code>n't</code>. The negation is now its own token &mdash; a thing later stages can see, count and protect.</p>
     </div>
   </div>
-  <p><code>lowest</code> is now never OOV even if the model never saw that exact word — it composes from known pieces. This is also why rare names get chopped into odd fragments inside LLM tokenizers.</p>
+</section>
 
-  <div class="note amber">
-    <h4>Separate task — sentence tokenization</h4>
-    <p>Splitting text into <em>sentences</em> is its own hard problem, because <code>.</code> is ambiguous (<code>Dr.</code>, <code>3.14</code>, <code>etc.</code>). NLTK's <code>punkt</code> uses a trained statistical model, not a regex.</p>
+<section class="s" data-sec="4">
+  <div class="head"><div class="kick">04 &middot; Tokenization</div><h2>Why <code>text.split(" ")</code> fails immediately</h2></div>
+  <div class="body">
+    <div class="tw"><table>
+      <tr><th>Input</th><th>Naive split gives</th><th>Problem</th></tr>
+      <tr><td><code>don't</code></td><td><code>don't</code></td><td>should be <code>do</code> + <code>n't</code></td></tr>
+      <tr><td><code>New York</code></td><td><code>New</code>, <code>York</code></td><td>one entity, split into two</td></tr>
+      <tr><td><code>U.S.A.</code></td><td><code>U.S.A.</code></td><td>is the final <code>.</code> a sentence end?</td></tr>
+      <tr><td><code>state-of-the-art</code></td><td>one token</td><td>or four?</td></tr>
+      <tr><td><code>&#8377;1,50,000</code></td><td>breaks on comma</td><td>number destroyed</td></tr>
+      <tr><td>Chinese / Japanese</td><td>whole sentence</td><td><strong>no spaces at all</strong></td></tr>
+    </table></div>
   </div>
-  <pre>from nltk.tokenize import word_tokenize
+</section>
+
+<section class="s" data-sec="4">
+  <div class="head"><div class="kick">04 &middot; Tokenization</div><h2>Three levels of granularity</h2></div>
+  <div class="body">
+    <div class="tw"><table>
+      <tr><th>Level</th><th>"unhappiness" becomes</th><th>Vocab</th><th>Trade-off</th></tr>
+      <tr><td><strong>Word</strong></td><td><code>unhappiness</code></td><td>50k &ndash; 1M</td><td>Out-Of-Vocabulary: an unseen word becomes <code>&lt;UNK&gt;</code> and its information is lost</td></tr>
+      <tr><td><strong>Character</strong></td><td><code>u, n, h, a, p, …</code></td><td>~100</td><td>No OOV ever, but sequences get very long and meaning is diluted</td></tr>
+      <tr><td><strong>Subword</strong></td><td><code>un + happi + ness</code></td><td>~30k</td><td><strong>Best of both</strong> &mdash; the sweet spot, used by every modern model</td></tr>
+    </table></div>
+    <div class="note good" style="margin-top:var(--gap)"><p>BPE, WordPiece and SentencePiece are all subword. This is what BERT and GPT actually use.</p></div>
+  </div>
+</section>
+
+<section class="s" data-sec="4">
+  <div class="head"><div class="kick">04 &middot; Live demo</div><h2>Byte Pair Encoding, one merge at a time</h2>
+    <p class="sub">Start from characters, greedily merge the most frequent adjacent pair, repeat.</p></div>
+  <div class="body" style="overflow:hidden">
+    <div class="machine">
+      <div class="m-bar">
+        <input type="text" id="bpe-corpus" value="low low lower lowest" aria-label="BPE corpus">
+        <button class="btn" id="bpe-step">Merge next pair</button>
+        <button class="btn ghost" id="bpe-reset">Reset</button>
+      </div>
+      <div class="m-body"><div id="bpe-out"></div><div class="m-note" id="bpe-note"></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="s" data-sec="4">
+  <div class="head"><div class="kick">04 &middot; Tokenization</div><h2>A separate task: sentence tokenization</h2></div>
+  <div class="body mid">
+    <div class="note amber"><p>Splitting text into <em>sentences</em> is its own hard problem, because <code>.</code> is ambiguous: <code>Dr.</code>, <code>3.14</code>, <code>etc.</code> NLTK's <code>punkt</code> uses a <strong>trained statistical model</strong>, not a regex.</p></div>
+    <pre style="margin-top:var(--gap)">from nltk.tokenize import word_tokenize
 word_tokenize("Dr. Das earned $3.5M. He's happy!")
 <i># ['Dr.', 'Das', 'earned', '$', '3.5M', '.', 'He', "'s", 'happy', '!']</i></pre>
+  </div>
 </section>
 
-<section id="stem">
-  <div class="sec-head"><div class="sec-no">05</div><h2><span class="tag">2</span> Stemming vs. Lemmatization</h2></div>
-  <div class="plain"><div class="lbl">In plain words</div><div>
-    <p>Two ways to make <code>run</code>, <code>runs</code>, <code>running</code> and <code>ran</code> count as one word instead of four.</p>
-    <p><strong>Stemming</strong> is chopping the ending off with scissors &mdash; fast, rough, and sometimes not a real word (<code>studies</code> &rarr; <code>studi</code>). <strong>Lemmatization</strong> is looking the word up in a dictionary &mdash; slower, but always a real word (<code>ran</code> &rarr; <code>run</code>).</p>
-  </div></div>
-  <p class="lede">Both collapse inflected forms to one base form, so <code>run</code>, <code>runs</code>, <code>running</code>, <code>ran</code> do not occupy four separate columns in the feature matrix. <strong>But they work in completely different ways</strong> — this is a classic interview question.</p>
-
-  <div class="machine">
-    <div class="m-bar">
-      <input type="text" id="sl-in" value="studies studying better university ran teaching classes" aria-label="Words to stem and lemmatize">
-      <span class="hint">type words &middot; compare side by side</span>
-    </div>
-    <div class="m-body"><div id="sl-out"></div></div>
-  </div>
-
-  <svg class="fig" id="fig-stem" viewBox="0 0 900 230" role="img" aria-label="Stemming cuts the ending off; lemmatization looks the word up in a dictionary"></svg>
-  <h3>Stemming — crude rule-based chopping</h3>
-  <p>Applies suffix-stripping rules. No dictionary, no grammar, no context. A sample of the ~60 <strong>Porter Stemmer</strong> rules:</p>
-  <pre>SSES    &rarr; SS     caresses   &rarr; caress
+<section class="s" data-sec="5">
+  <div class="head"><div class="kick">05 &middot; Stemming &mdash; stage 2</div><h2>Crude rule-based chopping</h2>
+    <p class="sub">Suffix stripping. No dictionary, no grammar, no context. ~60 Porter rules.</p></div>
+  <div class="body cols2">
+    <pre>SSES    &rarr; SS     caresses   &rarr; caress
 IES     &rarr; I      ponies     &rarr; poni
 ATIONAL &rarr; ATE    relational &rarr; relate
 ING     &rarr; &oslash;      teaching   &rarr; teach</pre>
-  <div class="tw"><table>
-    <tr><th>Word</th><th>Porter stem</th><th>Comment</th></tr>
-    <tr><td>studies</td><td>studi</td><td>not a real word — acceptable, it is only a lookup key</td></tr>
-    <tr><td>studying</td><td>studi</td><td><span class="yes">&#10004;</span> matches the row above</td></tr>
-    <tr><td>better</td><td>better</td><td><span class="no">&#10008;</span> misses <code>good</code></td></tr>
-    <tr><td>university</td><td>univers</td><td><span class="no">&#10008;</span> <strong>over-stemming</strong> — collides with <code>universe</code></td></tr>
-    <tr><td>ran</td><td>ran</td><td><span class="no">&#10008;</span> <strong>under-stemming</strong> — misses <code>run</code></td></tr>
-  </table></div>
-  <div class="note warn">
-    <h4>Two failure modes to name in an exam</h4>
-    <p><strong>Over-stemming</strong> — two different words collapse to the same stem, so meaning is lost. <strong>Under-stemming</strong> — two related words fail to collapse, so the relationship is missed.</p>
+    <div class="tw"><table>
+      <tr><th>Word</th><th>Stem</th><th>Comment</th></tr>
+      <tr><td>studies</td><td>studi</td><td>not a real word &mdash; fine, it is only a key</td></tr>
+      <tr><td>studying</td><td>studi</td><td><span class="yes">&#10004;</span> matches the row above</td></tr>
+      <tr><td>better</td><td>better</td><td><span class="no">&#10008;</span> misses <code>good</code></td></tr>
+      <tr><td>university</td><td>univers</td><td><span class="no">&#10008;</span> collides with <code>universe</code></td></tr>
+      <tr><td>ran</td><td>ran</td><td><span class="no">&#10008;</span> misses <code>run</code></td></tr>
+    </table></div>
   </div>
-  <p><strong>Variants:</strong> <em>Porter</em> (mild, classic), <em>Snowball / Porter2</em> (improved, multilingual), <em>Lancaster</em> (very aggressive, mangles words).</p>
-
-  <h3>Lemmatization — dictionary-based and grammar-aware</h3>
-  <p>Looks up the <strong>lemma</strong> — the actual dictionary headword — using a lexical database (WordNet) <strong>together with the POS tag</strong>.</p>
-  <div class="tw"><table>
-    <tr><th>Word</th><th>POS supplied</th><th>Lemma</th></tr>
-    <tr><td>ran</td><td>verb</td><td>run <span class="yes">&#10004;</span></td></tr>
-    <tr><td>better</td><td>adjective</td><td>good <span class="yes">&#10004;</span></td></tr>
-    <tr><td>meeting</td><td>noun</td><td>meeting</td></tr>
-    <tr><td>meeting</td><td>verb</td><td>meet</td></tr>
-  </table></div>
-  <p>That last pair carries the key insight: <strong>lemmatization needs POS tagging to work correctly.</strong> Without a tag, WordNet's lemmatizer defaults to <em>noun</em> and silently under-performs:</p>
-  <pre>from nltk.stem import WordNetLemmatizer
-lem = WordNetLemmatizer()
-lem.lemmatize("teaching")            <i># 'teaching'  &larr; defaults to noun, wrong</i>
-lem.lemmatize("teaching", pos="v")   <i># 'teach'     &larr; correct</i></pre>
-
-  <h3>Choosing between them</h3>
-  <div class="tw"><table>
-    <tr><th></th><th>Stemming</th><th>Lemmatization</th></tr>
-    <tr><td><strong>Speed</strong></td><td>Very fast (regex rules)</td><td>Slower (dictionary lookup + POS)</td></tr>
-    <tr><td><strong>Output</strong></td><td>May not be a real word</td><td>Always a valid word</td></tr>
-    <tr><td><strong>Accuracy</strong></td><td>Lower</td><td>Higher</td></tr>
-    <tr><td><strong>Needs POS?</strong></td><td>No</td><td>Yes</td></tr>
-    <tr><td><strong>Use when</strong></td><td>Search engines, huge corpora, speed matters</td><td>Chatbots, summarization, anything user-facing</td></tr>
-  </table></div>
-  <p>Our running sentence after lemmatization:</p>
-  <pre>satyaki be teach nlp class at classroom tech in bengaluru and the student be not love it</pre>
 </section>
 
-<section id="stop">
-  <div class="sec-head"><div class="sec-no">06</div><h2><span class="tag">3</span> Stopword removal</h2></div>
-  <div class="plain"><div class="lbl">In plain words</div><div>
-    <p><code>the</code>, <code>is</code>, <code>at</code>, <code>and</code> appear in nearly every sentence, so they say almost nothing about what a text is <em>about</em>. Dropping them makes the data smaller and faster.</p>
-    <p>The trap: <code>not</code> is on that same list. Drop it and <em>&ldquo;I did not like it&rdquo; becomes &ldquo;I like it&rdquo;</em> &mdash; the exact opposite.</p>
-  </div></div>
-  <p class="lede"><strong>Stopwords</strong> are high-frequency, low-information words: <code>the, is, at, which, on, and, a, an, in</code>. NLTK's English list holds ~179; spaCy's holds ~326.</p>
-  <p>The justification is information-theoretic: <code>the</code> appears in essentially every document, so its presence discriminates nothing. Removing stopwords typically cuts token count by <strong>35–45%</strong> with no loss for topic-style tasks.</p>
+<section class="s" data-sec="5">
+  <div class="head"><div class="kick">05 &middot; Stemming</div><h2>Two failure modes to name in an exam</h2></div>
+  <div class="body cols2 mid">
+    <div class="note warn"><h4>Over-stemming</h4><p style="font-size:var(--big)">Two <em>different</em> words collapse to the same stem. Meaning is lost.</p><p><code>university</code> &rarr; <code>univers</code> &larr; <code>universe</code></p></div>
+    <div class="note amber"><h4>Under-stemming</h4><p style="font-size:var(--big)">Two <em>related</em> words fail to collapse. The relationship is missed.</p><p><code>ran</code> stays <code>ran</code>, never meets <code>run</code></p></div>
+    <p class="hint" style="grid-column:1/-1">Variants: <strong>Porter</strong> (mild, classic) &middot; <strong>Snowball / Porter2</strong> (improved, multilingual) &middot; <strong>Lancaster</strong> (very aggressive, mangles words).</p>
+  </div>
+</section>
 
-  <div class="machine">
-    <div class="m-bar">
-      <input type="text" id="sw-in" value="I did not like it at all" aria-label="Sentence for stopword demo">
-      <span class="hint">click any word to keep or drop it &middot; watch the meaning move</span>
-    </div>
-    <div class="m-body">
-      <div id="sw-out"></div>
-      <div class="m-note" id="sw-note"></div>
+<section class="s" data-sec="5">
+  <div class="head"><div class="kick">05 &middot; Lemmatization</div><h2>Dictionary-based and grammar-aware</h2>
+    <p class="sub">Looks up the <strong>lemma</strong> in WordNet &mdash; using the POS tag.</p></div>
+  <div class="body cols2">
+    <div class="tw"><table>
+      <tr><th>Word</th><th>POS supplied</th><th>Lemma</th></tr>
+      <tr><td>ran</td><td>verb</td><td>run <span class="yes">&#10004;</span></td></tr>
+      <tr><td>better</td><td>adjective</td><td>good <span class="yes">&#10004;</span></td></tr>
+      <tr><td>meeting</td><td>noun</td><td>meeting</td></tr>
+      <tr><td>meeting</td><td>verb</td><td>meet</td></tr>
+    </table></div>
+    <div>
+      <div class="note"><p><strong>That last pair is the whole point:</strong> lemmatization needs POS tagging to work. Without a tag, WordNet defaults to <em>noun</em> and silently under-performs.</p></div>
+      <pre style="margin-top:var(--gap)">lem.lemmatize("teaching")
+<i># 'teaching'  &larr; defaults to noun, wrong</i>
+
+lem.lemmatize("teaching", pos="v")
+<i># 'teach'     &larr; correct</i></pre>
     </div>
   </div>
+</section>
 
-  <svg class="fig" id="fig-sieve" viewBox="0 0 900 300" role="img" aria-label="Words falling through a sieve: content words kept, function words dropped"></svg>
-  <h4>When removing them is correct</h4>
-  <p>Topic classification, document clustering, keyword extraction, search indexing, TF-IDF pipelines.</p>
-  <h4>When it destroys your task</h4>
-  <div class="tw"><table>
-    <tr><th>Task</th><th>Why it breaks</th></tr>
-    <tr><td><strong>Sentiment analysis</strong></td><td><code>not</code> is a stopword in NLTK. <em>"I did not like it"</em> &rarr; <code>like</code> — sentiment is <strong>flipped</strong></td></tr>
-    <tr><td><strong>Machine translation</strong></td><td>Function words carry the grammar; translation is impossible without them</td></tr>
-    <tr><td><strong>Question answering</strong></td><td><code>who / what / where / when</code> are often stoplisted — the entire question disappears</td></tr>
-    <tr><td><strong>Any transformer model</strong></td><td>BERT and GPT <em>use</em> function words for syntax. Never strip stopwords before an LLM</td></tr>
-    <tr><td><strong>Phrase search</strong></td><td><em>"To be or not to be"</em> &rarr; empty string</td></tr>
-  </table></div>
-  <div class="note">
-    <h4>Practical rule</h4>
-    <p>Stopword lists are a starting point, not gospel. Customize them — remove <code>not, no, never, n't</code> for sentiment; add domain junk (<code>patient</code>, <code>study</code> in a medical corpus where every document contains them) for topic modelling.</p>
+<section class="s" data-sec="5">
+  <div class="head"><div class="kick">05 &middot; Live demo</div><h2>Same word, both machines</h2></div>
+  <div class="body" style="overflow:hidden">
+    <div class="machine">
+      <div class="m-bar">
+        <input type="text" id="sl-in" value="studies studying better university ran teaching classes" aria-label="Words to compare">
+        <span class="hint">type any words</span>
+      </div>
+      <div class="m-body"><div id="sl-out"></div></div>
+    </div>
   </div>
-  <pre>from nltk.corpus import stopwords
+</section>
+
+<section class="s" data-sec="5">
+  <div class="head"><div class="kick">05 &middot; Stem vs. lemma</div><h2>Choosing between them</h2></div>
+  <div class="body">
+    <div class="tw"><table>
+      <tr><th></th><th>Stemming</th><th>Lemmatization</th></tr>
+      <tr><td><strong>Speed</strong></td><td>Very fast (regex rules)</td><td>Slower (dictionary + POS)</td></tr>
+      <tr><td><strong>Output</strong></td><td>May not be a real word</td><td>Always a valid word</td></tr>
+      <tr><td><strong>Accuracy</strong></td><td>Lower</td><td>Higher</td></tr>
+      <tr><td><strong>Needs POS?</strong></td><td>No</td><td><strong>Yes</strong></td></tr>
+      <tr><td><strong>Use when</strong></td><td>Search engines, huge corpora, speed matters</td><td>Chatbots, summarization, anything user-facing</td></tr>
+    </table></div>
+    <pre style="margin-top:var(--gap)">satyaki be teach nlp class at classroom tech in bengaluru and the student be not love it</pre>
+    <p class="hint">The running sentence after lemmatization.</p>
+  </div>
+</section>
+
+<section class="s" data-sec="6">
+  <div class="head"><div class="kick">06 &middot; Stopwords &mdash; stage 3</div><h2>High-frequency, low-information words</h2></div>
+  <div class="body mid">
+    <p class="lead"><code>the, is, at, which, on, and, a, an, in</code> &mdash; NLTK's English list holds ~179, spaCy's ~326.</p>
+    <div class="stats" style="margin:var(--gap) 0">
+      <div><b>~179</b>NLTK list</div><div><b>~326</b>spaCy list</div><div><b>35&ndash;45%</b>of tokens removed</div>
+    </div>
+    <p>The justification is information-theoretic: <code>the</code> appears in essentially every document, so its presence <strong>discriminates nothing</strong>.</p>
+    <div class="note good"><h4>When removing them is correct</h4><p>Topic classification &middot; document clustering &middot; keyword extraction &middot; search indexing &middot; TF-IDF pipelines.</p></div>
+  </div>
+</section>
+
+<section class="s" data-sec="6">
+  <div class="head"><div class="kick">06 &middot; Live demo</div><h2>Click a word to keep or drop it</h2></div>
+  <div class="body" style="overflow:hidden">
+    <div class="machine">
+      <div class="m-bar">
+        <input type="text" id="sw-in" value="I did not like it at all" aria-label="Sentence for stopword demo">
+        <span class="hint">watch the meaning move</span>
+      </div>
+      <div class="m-body"><div id="sw-out"></div><div class="m-note" id="sw-note"></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="s" data-sec="6">
+  <div class="head"><div class="kick">06 &middot; Stopwords</div><h2>When it destroys your task</h2></div>
+  <div class="body">
+    <div class="tw"><table>
+      <tr><th>Task</th><th>Why it breaks</th></tr>
+      <tr><td><strong>Sentiment analysis</strong></td><td><code>not</code> is a stopword in NLTK. "I did not like it" &rarr; <code>like</code> &mdash; sentiment is <strong>flipped</strong></td></tr>
+      <tr><td><strong>Machine translation</strong></td><td>Function words carry the grammar; translation is impossible without them</td></tr>
+      <tr><td><strong>Question answering</strong></td><td><code>who / what / where / when</code> are often stoplisted &mdash; the question disappears</td></tr>
+      <tr><td><strong>Any transformer</strong></td><td>BERT and GPT <em>use</em> function words for syntax. Never strip before an LLM</td></tr>
+      <tr><td><strong>Phrase search</strong></td><td>"To be or not to be" &rarr; empty string</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section class="s" data-sec="6">
+  <div class="head"><div class="kick">06 &middot; Stopwords</div><h2>The practical rule</h2></div>
+  <div class="body mid">
+    <div class="note"><p style="font-size:var(--big)">Stopword lists are a <strong>starting point, not gospel</strong>. Customize them.</p></div>
+    <pre style="margin-top:var(--gap)">from nltk.corpus import stopwords
 sw = set(stopwords.words('english')) - {'not', 'no', 'nor', "n't", 'against'}</pre>
+    <div class="cols2" style="margin-top:var(--gap)">
+      <div class="card"><h4>Remove from the list</h4><p><code>not, no, never, n't</code> for anything sentiment-related.</p></div>
+      <div class="card"><h4>Add to the list</h4><p>Domain junk &mdash; <code>patient</code>, <code>study</code> in a medical corpus where every document has them.</p></div>
+    </div>
+  </div>
 </section>
 
-<section id="pos">
-  <div class="sec-head"><div class="sec-no">07</div><h2><span class="tag">4</span> POS tagging (Part-of-Speech)</h2></div>
-  <div class="plain"><div class="lbl">In plain words</div><div>
-    <p>Labelling every word with its job: noun, verb, adjective, and so on.</p>
-    <p>The same word can have two jobs &mdash; <em>book a ticket</em> (verb) versus <em>read a book</em> (noun) &mdash; so the computer has to look at the neighbouring words to decide. It cannot just look the word up.</p>
-  </div></div>
-  <p class="lede"><strong>What it does:</strong> labels each token with its grammatical category.</p>
-  <pre>Satyaki/NNP was/VBD teaching/VBG NLP/NNP classes/NNS at/IN Classroom/NNP
+<section class="s" data-sec="7">
+  <div class="head"><div class="kick">07 &middot; POS tagging &mdash; stage 4</div><h2>Label each token with its grammatical category</h2></div>
+  <div class="body mid">
+    <pre>Satyaki/NNP was/VBD teaching/VBG NLP/NNP classes/NNS at/IN Classroom/NNP
 Tech/NNP in/IN Bengaluru/NNP ,/, and/CC the/DT students/NNS were/VBD
 n't/RB loving/VBG it/PRP ./.</pre>
+    <div class="note good" style="margin-top:var(--gap)">
+      <h4>What POS tagging feeds</h4>
+      <p>Lemmatization &middot; parsing &middot; NER &middot; feature engineering &mdash; "count of adjectives" is a strong feature for review sentiment.</p>
+    </div>
+  </div>
+</section>
 
-  <h3>Penn Treebank tagset — the tags worth memorizing</h3>
-  <div class="g2">
+<section class="s" data-sec="7">
+  <div class="head"><div class="kick">07 &middot; POS tagging</div><h2>Penn Treebank &mdash; the tags worth memorizing</h2></div>
+  <div class="body cols2">
     <div class="tw"><table>
       <tr><th>Tag</th><th>Meaning</th></tr>
       <tr><td><span class="tag">NN</span></td><td>noun, singular</td></tr>
@@ -590,266 +606,310 @@ n't/RB loving/VBG it/PRP ./.</pre>
       <tr><td><span class="tag">CC</span></td><td>coordinating conjunction</td></tr>
     </table></div>
   </div>
+</section>
 
-  <h3>Why it is hard — ambiguity</h3>
-  <p>About 11% of English word <em>types</em> are ambiguous, but they happen to be the <em>frequent</em> ones — so roughly <strong>40% of tokens</strong> in running text are ambiguous:</p>
-  <pre>"They can fish."     can = modal verb (VB)     / fish = verb
+<section class="s" data-sec="7">
+  <div class="head"><div class="kick">07 &middot; POS tagging</div><h2>Why it is hard &mdash; ambiguity</h2></div>
+  <div class="body mid">
+    <div class="stats" style="margin-bottom:var(--gap)">
+      <div><b>11%</b>of word types are ambiguous</div>
+      <div><b>~40%</b>of tokens in running text</div>
+    </div>
+    <pre>"They can fish."     can = modal verb (VB)      / fish = verb
 "They can fish."     can = to put in a can (VB) / fish = noun
 "He saw her duck."   duck = noun or verb?</pre>
-  <p>Resolving this requires context, which is why POS tagging is a <strong>sequence labeling</strong> problem, not a per-word dictionary lookup.</p>
-
-  <h3>How it is done, historically</h3>
-  <ol>
-    <li><strong>Rule-based</strong> (Brill tagger) — assign the most frequent tag, then apply transformation rules</li>
-    <li><strong>Statistical: HMM</strong> (Hidden Markov Model) — maximize <em>P(tags | words)</em> using transition probabilities <em>P(tag<sub>i</sub> | tag<sub>i−1</sub>)</em> and emission probabilities <em>P(word | tag)</em>, decoded with the <strong>Viterbi algorithm</strong>. This is the textbook answer.</li>
-    <li><strong>CRF</strong> (Conditional Random Fields) — discriminative, allows rich overlapping features</li>
-    <li><strong>Neural</strong> — BiLSTM or Transformer; ~97–98% accuracy today</li>
-  </ol>
-  <p><strong>What POS tagging feeds:</strong> lemmatization (as shown above), parsing, NER, and feature engineering — e.g. "count of adjectives" is a strong feature for review sentiment.</p>
+    <div class="note warn" style="margin-top:var(--gap)"><p>Resolving this needs <strong>context</strong> &mdash; which is why POS tagging is a <strong>sequence labeling</strong> problem, not a per-word dictionary lookup.</p></div>
+  </div>
 </section>
 
-<section id="parse">
-  <div class="sec-head"><div class="sec-no">08</div><h2><span class="tag">5</span> Parsing (syntactic analysis)</h2></div>
-  <div class="plain"><div class="lbl">In plain words</div><div>
-    <p>Tagging tells you each word&rsquo;s job. Parsing tells you <em>how the words are connected</em> &mdash; who is doing what to whom.</p>
-    <p>This is what lets a machine answer &ldquo;the camera is amazing but the battery is terrible&rdquo; with <em>two separate opinions about two separate things</em>, instead of one confused average.</p>
-  </div></div>
-  <p class="lede">Parsing moves from a flat tag sequence to <strong>structure</strong> — how the words relate to one another.</p>
-
-  <h3>8a &nbsp;Constituency parsing</h3>
-  <p>Groups words into nested phrases (NP = noun phrase, VP = verb phrase) using a <strong>Context-Free Grammar</strong>:</p>
-  <svg class="fig" viewBox="0 0 900 260" role="img" aria-label="Constituency tree: S branches into NP Satyaki and VP, which branches into V was teaching, NP NLP classes, and PP at Classroom Tech in Bengaluru"><g id="consg"></g></svg>
-  <p>Algorithms: <strong>CYK</strong>, <strong>Earley</strong>, probabilistic CFG (PCFG). This is directly analogous to how a compiler parses source code — the same theory, applied to an ambiguous natural grammar instead of a designed one.</p>
-
-  <h3>8b &nbsp;Dependency parsing</h3>
-  <p>The modern default. Builds a <strong>directed tree</strong> in which each word points to its syntactic head — no phrase nodes at all.</p>
-  <svg class="fig" viewBox="0 0 900 250" role="img" aria-label="Dependency tree with teaching as root and arcs to Satyaki nsubj, was aux, classes dobj, at prep"><g id="depg"></g></svg>
-  <p>Key relations: <code>nsubj</code> (subject), <code>dobj</code> (direct object), <code>amod</code> (adjectival modifier), <code>prep</code> / <code>pobj</code> (prepositional attachment), <code>neg</code> (negation).</p>
-
-  <div class="note good">
-    <h4>Why you would actually use it — relation extraction</h4>
-    <p><code>"The battery life is terrible but the camera is amazing."</code></p>
-    <p>Bag-of-words sees <code>terrible</code> and <code>amazing</code> and shrugs. Dependency parsing yields <code>amod(battery life, terrible)</code> and <code>amod(camera, amazing)</code> — which is exactly <strong>aspect-based sentiment analysis</strong>.</p>
+<section class="s" data-sec="7">
+  <div class="head"><div class="kick">07 &middot; POS tagging</div><h2>How it is done, historically</h2></div>
+  <div class="body cols2">
+    <div class="card"><h4>1 &middot; Rule-based</h4><p><strong>Brill tagger</strong> &mdash; assign the most frequent tag, then apply transformation rules.</p></div>
+    <div class="card"><h4>2 &middot; Statistical &mdash; HMM</h4><p>Maximize <em>P(tags | words)</em> from transition <em>P(tag<sub>i</sub>|tag<sub>i-1</sub>)</em> and emission <em>P(word|tag)</em>, decoded with <strong>Viterbi</strong>. <em>The textbook answer.</em></p></div>
+    <div class="card"><h4>3 &middot; CRF</h4><p>Conditional Random Fields &mdash; discriminative, allows rich overlapping features.</p></div>
+    <div class="card"><h4>4 &middot; Neural</h4><p>BiLSTM or Transformer &mdash; <strong>~97&ndash;98% accuracy</strong> today.</p></div>
   </div>
-  <div class="note warn">
-    <h4>The hard problem — attachment ambiguity</h4>
-    <p><code>"I saw the man with the telescope."</code></p>
-    <p>&rarr; telescope attaches to "saw" &nbsp;(I used it)<br>&rarr; telescope attaches to "man" &nbsp;(he had it)</p>
-    <p>Both parses are grammatically valid. Resolution needs semantics or statistics — grammar alone cannot decide.</p>
-  </div>
-  <pre>import spacy
-nlp = spacy.load("en_core_web_sm")
-for t in nlp("Satyaki was teaching NLP classes"):
-    print(t.text, t.dep_, "&rarr;", t.head.text)</pre>
 </section>
 
-<section id="ner">
-  <div class="sec-head"><div class="sec-no">09</div><h2><span class="tag">6</span> NER — Named Entity Recognition</h2></div>
-  <div class="plain"><div class="lbl">In plain words</div><div>
-    <p>Spotting the names in a text: people, companies, cities, dates, amounts of money.</p>
-    <p>Capital letters are the biggest clue, which is exactly why this has to run <em>before</em> we make everything lowercase. Do it in the wrong order and the clue is gone.</p>
-  </div></div>
-  <p class="lede"><strong>NER</strong> locates <strong>named things</strong> in text and classifies what kind of thing each one is. It performs two jobs at once: <strong>recognition</strong> (detecting the boundary of the entity, including multi-word spans) and <strong>classification</strong> (assigning it a type).</p>
-  <pre>[Satyaki]<b>PERSON</b> was teaching [NLP]<b>MISC</b> classes at [Classroom Tech]<b>ORG</b>
+<section class="s" data-sec="8">
+  <div class="head"><div class="kick">08a &middot; Parsing &mdash; stage 5</div><h2>Constituency parsing &mdash; phrases inside phrases</h2>
+    <p class="sub">Context-Free Grammar. Algorithms: CYK, Earley, probabilistic CFG.</p></div>
+  <div class="body figwrap">
+    <svg class="fig" viewBox="0 0 900 250" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Constituency tree"><g id="consg"></g></svg>
+  </div>
+</section>
+
+<section class="s" data-sec="8">
+  <div class="head"><div class="kick">08b &middot; Parsing</div><h2>Dependency parsing &mdash; the modern default</h2>
+    <p class="sub">A directed tree: every word points to its syntactic head. No phrase nodes.</p></div>
+  <div class="body figwrap">
+    <svg class="fig" viewBox="0 0 900 250" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Dependency tree"><g id="depg"></g></svg>
+  </div>
+</section>
+
+<section class="s" data-sec="8">
+  <div class="head"><div class="kick">08 &middot; Parsing</div><h2>Why you would actually use it</h2></div>
+  <div class="body cols2 mid">
+    <div class="note good">
+      <h4>Relation extraction</h4>
+      <p><code>"The battery life is terrible but the camera is amazing."</code></p>
+      <p>Bag-of-words sees <code>terrible</code> and <code>amazing</code> and shrugs. Dependency parsing yields <code>amod(battery life, terrible)</code> and <code>amod(camera, amazing)</code> &mdash; <strong>aspect-based sentiment analysis</strong>.</p>
+    </div>
+    <div class="note warn">
+      <h4>The hard problem &mdash; attachment ambiguity</h4>
+      <p><code>"I saw the man with the telescope."</code></p>
+      <p>&rarr; telescope attaches to "saw" (I used it)<br>&rarr; telescope attaches to "man" (he had it)</p>
+      <p>Both are grammatically valid. <strong>Grammar alone cannot decide.</strong></p>
+    </div>
+  </div>
+</section>
+
+<section class="s" data-sec="9">
+  <div class="head"><div class="kick">09 &middot; NER &mdash; stage 6</div><h2>Locate named things, classify what they are</h2></div>
+  <div class="body mid">
+    <pre>[Satyaki]<b>PERSON</b> was teaching [NLP]<b>MISC</b> classes at [Classroom Tech]<b>ORG</b>
 in [Bengaluru]<b>GPE</b></pre>
-
-  <h4>Breaking down the term</h4>
-  <ul>
-    <li><strong>Named</strong> — the thing has a <em>proper name</em> (<code>Bengaluru</code>), not a generic description (<code>the city</code>)</li>
-    <li><strong>Entity</strong> — a real-world object</li>
-    <li><strong>Recognition</strong> — identify it and categorize it</li>
-  </ul>
-
-  <h3>Standard entity types</h3>
-  <div class="tw"><table>
-    <tr><th>Tag</th><th>Meaning</th><th>Example</th></tr>
-    <tr><td><span class="tag">PERSON</span></td><td>people</td><td>Satyaki, Sundar Pichai</td></tr>
-    <tr><td><span class="tag">ORG</span></td><td>organizations</td><td>Classroom Tech, Infosys</td></tr>
-    <tr><td><span class="tag">GPE</span></td><td>countries, cities, states</td><td>India, Bengaluru</td></tr>
-    <tr><td><span class="tag">LOC</span></td><td>non-political locations</td><td>Himalayas, Bay of Bengal</td></tr>
-    <tr><td><span class="tag">DATE / TIME</span></td><td>temporal expressions</td><td>2023, next Friday</td></tr>
-    <tr><td><span class="tag">MONEY</span></td><td>monetary amounts</td><td>&#8377;50,000</td></tr>
-    <tr><td><span class="tag">PRODUCT</span></td><td>objects</td><td>iPhone 15</td></tr>
-    <tr><td><span class="tag">PERCENT</span></td><td>percentages</td><td>40%</td></tr>
-  </table></div>
-
-  <h3>The BIO / IOB tagging scheme</h3>
-  <p>How a per-token classifier represents multi-word spans:</p>
-  <div class="tw"><table>
-    <tr><th>Token</th><th>Tag</th></tr>
-    <tr><td>Satyaki</td><td><span class="tag">B-PER</span></td></tr>
-    <tr><td>was</td><td><span class="tag">O</span></td></tr>
-    <tr><td>at</td><td><span class="tag">O</span></td></tr>
-    <tr><td>Classroom</td><td><span class="tag">B-ORG</span></td></tr>
-    <tr><td>Tech</td><td><span class="tag">I-ORG</span></td></tr>
-    <tr><td>in</td><td><span class="tag">O</span></td></tr>
-    <tr><td>Bengaluru</td><td><span class="tag">B-GPE</span></td></tr>
-  </table></div>
-  <p><code>B-</code> = beginning of an entity, <code>I-</code> = inside, <code>O</code> = outside. The B/I distinction is what lets the model distinguish "Classroom Tech" (one organization) from two adjacent separate organizations.</p>
-
-  <h3>Why NER is genuinely hard</h3>
-  <ul>
-    <li><strong>Ambiguity</strong> — <code>Washington</code> = person, city or state? <code>Apple</code> = fruit or company? <code>Jordan</code> = person or country?</li>
-    <li><strong>Nested entities</strong> — [Bank of [India]<sub>GPE</sub>]<sub>ORG</sub></li>
-    <li><strong>Novel entities</strong> — new startups and people appear daily, so a lookup list (gazetteer) can never keep up. The model must generalize from <em>context</em>: "… joined X as CEO" implies X is an organization.</li>
-  </ul>
-  <p><strong>Approaches over time:</strong> gazetteer lookup &rarr; HMM/CRF with hand-built features (capitalization, prefix/suffix, surrounding words) &rarr; BiLSTM-CRF &rarr; fine-tuned BERT (current state of the art, ~93 F1 on CoNLL-2003).</p>
-  <p><strong>Real uses:</strong> resume parsing, anonymizing medical and legal records (PII redaction), knowledge-graph construction, financial news monitoring, and chatbot slot-filling — "<em>book a flight to Delhi on Friday</em>" &rarr; <code>DEST=Delhi</code>, <code>DATE=Friday</code>.</p>
-  <div class="note">
-    <h4>One-line answer for a viva</h4>
-    <p>NER is the task of locating named entities in unstructured text and classifying them into predefined categories such as person, organization, location, date and money.</p>
+    <div class="cols3" style="margin-top:var(--gap)">
+      <div class="card"><h4>Named</h4><p>It has a <em>proper name</em> (<code>Bengaluru</code>), not a generic description (<code>the city</code>).</p></div>
+      <div class="card"><h4>Entity</h4><p>A real-world object.</p></div>
+      <div class="card"><h4>Recognition</h4><p>Identify the span <em>and</em> categorize it &mdash; two jobs at once.</p></div>
+    </div>
   </div>
 </section>
 
-<section id="vec">
-  <div class="sec-head"><div class="sec-no">10</div><h2><span class="tag">7</span> Vectorization — turning text into numbers</h2></div>
-  <div class="plain"><div class="lbl">In plain words</div><div>
-    <p>The payoff step: real numbers at last.</p>
-    <p>Simplest: <em>count how often each word appears</em>. Better: give rare, telling words a bigger score than common ones. Best: give every word a short list of numbers that places it on a map, so <code>cat</code> lands near <code>dog</code> and far from <code>democracy</code>.</p>
-  </div></div>
-  <p class="lede">The payoff step. Three generations of methods, each one fixing the previous one's flaw.</p>
+<section class="s" data-sec="9">
+  <div class="head"><div class="kick">09 &middot; NER</div><h2>Standard entity types</h2></div>
+  <div class="body">
+    <div class="tw"><table>
+      <tr><th>Tag</th><th>Meaning</th><th>Example</th></tr>
+      <tr><td><span class="tag">PERSON</span></td><td>people</td><td>Satyaki, Sundar Pichai</td></tr>
+      <tr><td><span class="tag">ORG</span></td><td>organizations</td><td>Classroom Tech, Infosys</td></tr>
+      <tr><td><span class="tag">GPE</span></td><td>countries, cities, states</td><td>India, Bengaluru</td></tr>
+      <tr><td><span class="tag">LOC</span></td><td>non-political locations</td><td>Himalayas, Bay of Bengal</td></tr>
+      <tr><td><span class="tag">DATE / TIME</span></td><td>temporal expressions</td><td>2023, next Friday</td></tr>
+      <tr><td><span class="tag">MONEY</span></td><td>monetary amounts</td><td>&#8377;50,000</td></tr>
+      <tr><td><span class="tag">PRODUCT</span></td><td>objects</td><td>iPhone 15</td></tr>
+      <tr><td><span class="tag">PERCENT</span></td><td>percentages</td><td>40%</td></tr>
+    </table></div>
+  </div>
+</section>
 
-  <h3>10a &nbsp;One-Hot Encoding — the baseline that fails</h3>
-  <p>A vocabulary of 10,000 words means each word becomes a 10,000-dimensional vector of zeros with a single 1.</p>
-  <p><strong>Fatal problems:</strong> the representation is <em>enormous and sparse</em>, and <em>every pair of words is equidistant</em> — <code>cat</code> is exactly as far from <code>dog</code> as it is from <code>democracy</code>. There is no notion of similarity at all.</p>
-
-  <svg class="fig" id="fig-vec" viewBox="0 0 900 300" role="img" aria-label="One-hot vectors are long and meaningless; embeddings are short and place similar words near each other"></svg>
-  <h3>10b &nbsp;Bag of Words (BoW) / CountVectorizer</h3>
-  <p>Represent a <em>document</em> as a vector of word counts. Word order is discarded — hence "bag".</p>
-
-  <div class="machine">
-    <div class="m-bar">
-      <input type="text" id="d1" value="I love NLP" aria-label="Document 1">
-      <input type="text" id="d2" value="I love SQL" aria-label="Document 2">
-      <input type="text" id="d3" value="NLP is fun fun fun" aria-label="Document 3">
-      <button class="btn ghost" id="vec-toggle">Show TF-IDF</button>
-    </div>
-    <div class="m-body">
-      <div class="m-head"><h3 id="vec-title">Bag of Words — raw counts</h3></div>
-      <p class="m-what" id="vec-what">Every unique word becomes a column. Every document becomes a row of counts.</p>
-      <div id="vec-out"></div>
-      <div class="m-note" id="vec-note"></div>
+<section class="s" data-sec="9">
+  <div class="head"><div class="kick">09 &middot; NER</div><h2>The BIO / IOB scheme</h2>
+    <p class="sub">How a per-token classifier represents multi-word spans.</p></div>
+  <div class="body cols2">
+    <div class="tw"><table>
+      <tr><th>Token</th><th>Tag</th></tr>
+      <tr><td>Satyaki</td><td><span class="tag">B-PER</span></td></tr>
+      <tr><td>was</td><td><span class="tag">O</span></td></tr>
+      <tr><td>at</td><td><span class="tag">O</span></td></tr>
+      <tr><td>Classroom</td><td><span class="tag">B-ORG</span></td></tr>
+      <tr><td>Tech</td><td><span class="tag">I-ORG</span></td></tr>
+      <tr><td>in</td><td><span class="tag">O</span></td></tr>
+      <tr><td>Bengaluru</td><td><span class="tag">B-GPE</span></td></tr>
+    </table></div>
+    <div class="mid">
+      <p class="lead"><code>B-</code> beginning &middot; <code>I-</code> inside &middot; <code>O</code> outside.</p>
+      <div class="note"><p>The B/I distinction is what lets the model tell <strong>"Classroom Tech"</strong> (one organization) from <strong>two adjacent separate organizations</strong>.</p></div>
     </div>
   </div>
+</section>
 
-  <h4>Limitations</h4>
-  <ol>
-    <li><strong>Word order is lost</strong> — "<em>dog bites man</em>" and "<em>man bites dog</em>" produce identical vectors</li>
-    <li><strong>Sparsity</strong> — a 50k vocabulary with a 20-word document is 99.96% zeros</li>
-    <li><strong>No semantics</strong> — <code>good</code> and <code>great</code> are unrelated dimensions</li>
-    <li><strong>Frequent words dominate</strong> — which TF-IDF fixes</li>
-  </ol>
-  <p><strong>Partial fix — n-grams.</strong> Include word pairs and triples to recover local order:</p>
-  <pre>CountVectorizer(ngram_range=(1,2))
+<section class="s" data-sec="9">
+  <div class="head"><div class="kick">09 &middot; NER</div><h2>Why it is genuinely hard</h2></div>
+  <div class="body cols2">
+    <div>
+      <div class="card"><h4>Ambiguity</h4><p><code>Washington</code> = person, city or state? <code>Apple</code> = fruit or company? <code>Jordan</code> = person or country?</p></div>
+      <div class="card" style="margin-top:var(--gap)"><h4>Nested entities</h4><p>[Bank of [India]<sub>GPE</sub>]<sub>ORG</sub></p></div>
+      <div class="card" style="margin-top:var(--gap)"><h4>Novel entities</h4><p>New startups and people appear daily &mdash; a gazetteer can never keep up. The model must generalize from <em>context</em>: "… joined X as CEO" implies X is an organization.</p></div>
+    </div>
+    <div class="mid">
+      <div class="note"><h4>Approaches over time</h4><p>gazetteer &rarr; HMM/CRF with hand-built features (capitalization, prefix/suffix) &rarr; BiLSTM-CRF &rarr; <strong>fine-tuned BERT</strong> (~93 F1 on CoNLL-2003)</p></div>
+      <div class="note good" style="margin-top:var(--gap)"><h4>Real uses</h4><p>Resume parsing &middot; PII redaction in medical and legal records &middot; knowledge graphs &middot; financial news monitoring &middot; chatbot slot-filling: "book a flight to Delhi on Friday" &rarr; <code>DEST=Delhi</code>, <code>DATE=Friday</code></p></div>
+    </div>
+  </div>
+</section>
+
+<section class="s" data-sec="10">
+  <div class="head"><div class="kick">10a &middot; Vectorization &mdash; stage 7</div><h2>One-hot encoding &mdash; the baseline that fails</h2></div>
+  <div class="body mid">
+    <p class="lead">A 10,000-word vocabulary means each word is a 10,000-dimensional vector of zeros with a single 1.</p>
+    <div class="cols2" style="margin-top:var(--gap)">
+      <div class="note warn"><h4>Enormous and sparse</h4><p>One dimension per vocabulary entry, and all but one of them is zero.</p></div>
+      <div class="note warn"><h4>Every pair is equidistant</h4><p><code>cat</code> is exactly as far from <code>dog</code> as it is from <code>democracy</code>. <strong>No notion of similarity at all.</strong></p></div>
+    </div>
+  </div>
+</section>
+
+<section class="s" data-sec="10">
+  <div class="head"><div class="kick">10b &middot; Live demo</div><h2>Bag of Words &rarr; TF-IDF</h2>
+    <p class="sub">Edit the documents. Every unique word is a column; every document is a row.</p></div>
+  <div class="body" style="overflow:hidden">
+    <div class="machine">
+      <div class="m-bar">
+        <input type="text" id="d1" value="I love NLP" aria-label="Document 1">
+        <input type="text" id="d2" value="I love SQL" aria-label="Document 2">
+        <input type="text" id="d3" value="NLP is fun fun fun" aria-label="Document 3">
+        <button class="btn" id="vec-toggle">Show TF-IDF</button>
+      </div>
+      <div class="m-body">
+        <div class="m-head"><h3 id="vec-title">Bag of Words</h3></div>
+        <p class="m-what" id="vec-what"></p>
+        <div id="vec-out"></div>
+        <div class="m-note" id="vec-note"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="s" data-sec="10">
+  <div class="head"><div class="kick">10b &middot; Bag of Words</div><h2>Four limitations</h2></div>
+  <div class="body cols2">
+    <div class="card"><h4>1 &middot; Word order is lost</h4><p>"dog bites man" and "man bites dog" produce <strong>identical vectors</strong>.</p></div>
+    <div class="card"><h4>2 &middot; Sparsity</h4><p>A 50k vocabulary with a 20-word document is <strong>99.96% zeros</strong>.</p></div>
+    <div class="card"><h4>3 &middot; No semantics</h4><p><code>good</code> and <code>great</code> are unrelated dimensions.</p></div>
+    <div class="card"><h4>4 &middot; Frequent words dominate</h4><p>Which is exactly what TF-IDF fixes.</p></div>
+    <div style="grid-column:1/-1">
+      <pre>CountVectorizer(ngram_range=(1,2))
 <i># unigrams + bigrams:  "not", "good", "not good"</i></pre>
-  <p>This rescues negation for sentiment analysis. The cost is that the vocabulary explodes combinatorially.</p>
-
-  <h3>10c &nbsp;TF-IDF (Term Frequency – Inverse Document Frequency)</h3>
-  <div class="note">
-    <h4>The intuition</h4>
-    <p>A word is important to a document if it appears <strong>often in that document</strong> but <strong>rarely across the corpus</strong>. <code>the</code> appears everywhere, so it is worthless. <code>Bengaluru</code> appears in 3 documents out of 10,000, so it is highly informative.</p>
+      <p class="hint">Partial fix &mdash; n-grams recover local order and rescue negation. Cost: the vocabulary explodes combinatorially.</p>
+    </div>
   </div>
-  <svg class="fig" viewBox="0 0 900 180" role="img" aria-label="TF-IDF formula: TF times IDF"><g id="tfidfg"></g></svg>
-  <p>where <em>N</em> is the total number of documents and <em>df(t)</em> is the number of documents containing <em>t</em>. The <code>+1</code> is smoothing to avoid division by zero; scikit-learn additionally L2-normalizes each row so that document length does not skew the result.</p>
+</section>
 
-  <h4>Worked example — N = 10,000 documents</h4>
-  <div class="tw"><table>
-    <tr><th>Term</th><th>Appears in</th><th>IDF = log(N / df)</th><th>Verdict</th></tr>
-    <tr><td><code>the</code></td><td>10,000 docs</td><td>log(1) = <strong>0</strong></td><td>killed entirely</td></tr>
-    <tr><td><code>data</code></td><td>1,000 docs</td><td>log(10) &asymp; <strong>2.30</strong></td><td>moderately useful</td></tr>
-    <tr><td><code>Bengaluru</code></td><td>10 docs</td><td>log(1000) &asymp; <strong>6.91</strong></td><td>highly distinctive</td></tr>
-  </table></div>
-  <p>So TF-IDF <strong>automatically down-weights stopwords</strong> — which is why explicit stopword removal is often redundant in a TF-IDF pipeline.</p>
-  <div class="note good">
-    <p>TF-IDF remains a genuinely strong baseline. For many text-classification tasks, <strong>TF-IDF + Logistic Regression</strong> lands within a few points of BERT at roughly a thousandth of the computational cost.</p>
+<section class="s" data-sec="10">
+  <div class="head"><div class="kick">10c &middot; TF-IDF</div><h2>Often in this document, rare across the corpus</h2></div>
+  <div class="body">
+    <div class="figwrap" style="height:250px"><svg class="fig" viewBox="0 0 900 180" preserveAspectRatio="xMidYMid meet" role="img" aria-label="TF-IDF formula"><g id="tfidfg"></g></svg></div>
+    <div class="tw" style="margin-top:var(--gap)"><table>
+      <tr><th>Term</th><th>Appears in</th><th>IDF = log(N / df)</th><th>Verdict</th></tr>
+      <tr><td><code>the</code></td><td>10,000 docs</td><td>log(1) = <strong>0</strong></td><td>killed entirely</td></tr>
+      <tr><td><code>data</code></td><td>1,000 docs</td><td>log(10) &asymp; <strong>2.30</strong></td><td>moderately useful</td></tr>
+      <tr><td><code>Bengaluru</code></td><td>10 docs</td><td>log(1000) &asymp; <strong>6.91</strong></td><td>highly distinctive</td></tr>
+    </table></div>
+    <p class="hint" style="margin-top:6px">N = 10,000 documents. TF-IDF <strong>automatically down-weights stopwords</strong> &mdash; explicit removal is often redundant here.</p>
   </div>
+</section>
 
-  <h3>10d &nbsp;Word Embeddings — Word2Vec and GloVe</h3>
-  <p>The conceptual leap: represent each word as a <strong>dense, low-dimensional (50–300) vector of real numbers</strong>, learned so that <strong>similar words land near each other in vector space</strong>.</p>
-  <pre>king   = [ 0.52, -0.18,  0.91, ...,  0.33]   <i>&larr; 300 numbers</i>
+<section class="s" data-sec="10">
+  <div class="head"><div class="kick">10c &middot; TF-IDF</div></div>
+  <div class="body center">
+    <p class="quote">TF-IDF + Logistic Regression lands within a <em>few points of BERT</em> at roughly a thousandth of the computational cost.</p>
+    <div class="by">Still a genuinely strong baseline</div>
+  </div>
+</section>
+
+<section class="s" data-sec="10">
+  <div class="head"><div class="kick">10d &middot; Word embeddings</div><h2>Dense vectors where distance means meaning</h2></div>
+  <div class="body mid">
+    <pre>king   = [ 0.52, -0.18,  0.91, ...,  0.33]   <i>&larr; 300 numbers</i>
 queen  = [ 0.49, -0.21,  0.88, ...,  0.31]   <i>&larr; very close to king</i>
 banana = [-0.72,  0.63, -0.11, ...,  0.90]   <i>&larr; far away</i></pre>
-  <div class="note">
-    <h4>The distributional hypothesis (Firth, 1957)</h4>
-    <p>"<em>You shall know a word by the company it keeps.</em>" Words appearing in similar contexts have similar meanings. Every embedding method is an implementation of this single idea.</p>
-  </div>
-
-  <div class="machine">
-    <div class="m-bar">
-      <span class="hint">Click two words to measure cosine similarity &middot; or run the analogy</span>
-      <button class="btn ghost" id="ana1">king &minus; man + woman</button>
-      <button class="btn ghost" id="ana2">Paris &minus; France + Italy</button>
-      <button class="btn ghost" id="ana-clear">Clear</button>
+    <div class="note" style="margin-top:var(--gap)">
+      <h4>The distributional hypothesis &mdash; Firth, 1957</h4>
+      <p style="font-size:var(--big)">"You shall know a word by the company it keeps."</p>
+      <p>Words appearing in similar contexts have similar meanings. <strong>Every embedding method implements this one idea.</strong></p>
     </div>
-    <div class="m-body">
-      <svg class="fig" id="embfig" viewBox="0 0 900 430" style="margin-top:0" role="img" aria-label="Two-dimensional word vector space showing gender and country analogies"></svg>
-      <div class="m-note" id="emb-note">Meaning becomes geometry. Similarity is measured by cosine of the angle between two vectors.</div>
-    </div>
-  </div>
-
-  <h4>Word2Vec (Mikolov, Google, 2013)</h4>
-  <p>A shallow neural network trained on a deliberately fake task; the output layer is thrown away and the hidden weights are kept as the embeddings. Two architectures:</p>
-  <div class="tw"><table>
-    <tr><th></th><th>Predicts</th><th>Better for</th><th>Speed</th></tr>
-    <tr><td><strong>CBOW</strong></td><td>centre word &larr; from context</td><td>frequent words</td><td>faster</td></tr>
-    <tr><td><strong>Skip-gram</strong></td><td>context &larr; from centre word</td><td>rare words, small corpora</td><td>slower</td></tr>
-  </table></div>
-  <pre>Sentence: "the quick brown fox jumps"   window = 2, centre = "brown"
-
-CBOW:      [the, quick, fox, jumps]  &rarr;  brown
-Skip-gram: brown  &rarr;  [the, quick, fox, jumps]</pre>
-  <p>Trained with <strong>negative sampling</strong> — instead of computing a 50,000-way softmax, the model merely discriminates the true context word from a handful of random ones. That trick is what made Word2Vec fast enough to be practical.</p>
-
-  <h4>GloVe (Stanford, 2014)</h4>
-  <p>Rather than scanning local windows, GloVe builds a global <strong>word–word co-occurrence matrix</strong> over the whole corpus and factorizes it, fitting vectors so that <em>w<sub>i</sub><sup>T</sup>w<sub>j</sub> + b<sub>i</sub> + b<sub>j</sub> &asymp; log(X<sub>ij</sub>)</em>. Word2Vec is <em>predictive and local</em>; GloVe is <em>count-based and global</em>. In practice their performance is comparable.</p>
-
-  <div class="note warn">
-    <h4>The fatal limitation — embeddings are static</h4>
-    <p><code>"I sat on the river bank"</code> &rarr; same vector for "bank"<br><code>"I withdrew cash from the bank"</code> &rarr; same vector for "bank"</p>
-    <p><code>bank</code> gets <strong>one</strong> vector, averaging the river sense and the money sense into an incoherent blur.</p>
-  </div>
-  <p><strong>FastText</strong> (Facebook) patches the OOV problem by representing a word as the sum of its character n-grams, so <code>unhappiness</code> composes even if it was never seen. But the polysemy problem stands.</p>
-  <div class="note good">
-    <h4>Why this matters historically</h4>
-    <p>This is precisely the gap that Transformers closed. BERT produces <strong>contextual embeddings</strong> — the vector for <code>bank</code> is computed <em>from the sentence it sits in</em>, so the two <code>bank</code>s receive different vectors. That single change is what ended the classical pipeline era.</p>
   </div>
 </section>
 
-<section id="order">
-  <div class="sec-head"><div class="sec-no">11</div><h2>Pipeline ordering — and what to skip</h2></div>
-  <div class="plain"><div class="lbl">In plain words</div><div>
-    <p>Some steps must come before others, or they quietly produce nonsense &mdash; no error message, just worse results.</p>
-    <p>Tag before you look words up. Find the names before you lowercase. Keep the small words until the parser has finished with them.</p>
-  </div></div>
-  <p class="lede">The order is not arbitrary. Three of these steps must run before three others, or they quietly produce garbage.</p>
-  <svg class="fig" viewBox="0 0 900 570" role="img" aria-label="Pipeline flowchart from raw text down to ML model, with POS tagging branching to lemmatization and to parsing and NER"><g id="flowg"></g></svg>
-
-  <h3>Ordering rules people get wrong</h3>
-  <ul>
-    <li><strong>POS before lemmatization</strong> — otherwise the lemmatizer guesses "noun" and quietly fails</li>
-    <li><strong>NER before lowercasing</strong> — capitalization is NER's strongest feature; lowercase first and you have thrown it away</li>
-    <li><strong>Stopword removal after parsing</strong> — a parser needs <code>the</code>, <code>of</code>, <code>in</code> to build a tree</li>
-    <li><strong>Lemmatize, then remove stopwords</strong> — so that inflected forms of stopwords are also caught</li>
-  </ul>
-
-  <h3>What to skip, by task</h3>
-  <div class="tw"><table>
-    <tr><th>Task</th><th>Skip</th></tr>
-    <tr><td>Sentiment analysis</td><td>Stopword removal — or at minimum keep the negations</td></tr>
-    <tr><td>Translation / summarization</td><td>Stopwords and stemming — you need real, complete words</td></tr>
-    <tr><td>Feeding a transformer</td><td><strong>Everything above.</strong> BERT and GPT want raw text; their own subword tokenizer handles it</td></tr>
-    <tr><td>Search indexing</td><td>Nothing — the full stack applies</td></tr>
-  </table></div>
-
-  <div class="note">
-    <h4>The big picture</h4>
-    <p>For LLMs this entire pipeline collapses into <em>one</em> step — subword tokenization — and the model learns morphology, syntax and entities implicitly from data. The classic stack still matters because it is interpretable, fast, needs no GPU, works on small data, and is the standard interview and examination material.</p>
+<section class="s" data-sec="10">
+  <div class="head"><div class="kick">10d &middot; Live demo</div><h2>Meaning becomes geometry</h2></div>
+  <div class="body" style="overflow:hidden">
+    <div class="machine">
+      <div class="m-bar">
+        <span class="hint">click two words for cosine similarity</span>
+        <button class="btn ghost" id="ana1">king &minus; man + woman</button>
+        <button class="btn ghost" id="ana2">Paris &minus; France + Italy</button>
+        <button class="btn ghost" id="ana-clear">Clear</button>
+      </div>
+      <div class="m-body" style="display:flex; flex-direction:column; gap:6px">
+        <div class="figwrap" style="flex:1 1 auto; min-height:0"><svg class="fig" id="embfig" viewBox="0 0 900 430" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Word vector space"></svg></div>
+        <div class="m-note" id="emb-note" style="flex:0 0 auto"></div>
+      </div>
+    </div>
   </div>
 </section>
 
-<section id="code">
-  <div class="sec-head"><div class="sec-no">12</div><h2>The whole pipeline in code</h2></div>
-  <pre>import spacy, nltk
+<section class="s" data-sec="10">
+  <div class="head"><div class="kick">10d &middot; Word embeddings</div><h2>Word2Vec and GloVe</h2></div>
+  <div class="body cols2">
+    <div>
+      <h3 style="font-size:var(--h3); margin-bottom:6px">Word2Vec &mdash; Mikolov, Google, 2013</h3>
+      <p class="hint">A shallow network trained on a fake task; the output layer is thrown away and the hidden weights are the embeddings.</p>
+      <div class="tw" style="margin-top:8px"><table>
+        <tr><th></th><th>Predicts</th><th>Better for</th></tr>
+        <tr><td><strong>CBOW</strong></td><td>centre word &larr; context</td><td>frequent words, faster</td></tr>
+        <tr><td><strong>Skip-gram</strong></td><td>context &larr; centre word</td><td>rare words, small corpora</td></tr>
+      </table></div>
+      <pre style="margin-top:8px">window = 2, centre = "brown"
+CBOW:      [the, quick, fox, jumps] &rarr; brown
+Skip-gram: brown &rarr; [the, quick, fox, jumps]</pre>
+    </div>
+    <div>
+      <h3 style="font-size:var(--h3); margin-bottom:6px">GloVe &mdash; Stanford, 2014</h3>
+      <p>Builds a global <strong>word&ndash;word co-occurrence matrix</strong> over the whole corpus and factorizes it, fitting <em>w<sub>i</sub><sup>T</sup>w<sub>j</sub> + b<sub>i</sub> + b<sub>j</sub> &asymp; log(X<sub>ij</sub>)</em>.</p>
+      <div class="note"><p>Word2Vec is <em>predictive and local</em>. GloVe is <em>count-based and global</em>. In practice performance is comparable.</p></div>
+      <div class="note good" style="margin-top:var(--gap)"><h4>Negative sampling</h4><p>Instead of a 50,000-way softmax, discriminate the true context word from a handful of random ones. That trick made Word2Vec practical.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="s" data-sec="10">
+  <div class="head"><div class="kick">10d &middot; The limitation that ended the era</div><h2>Static embeddings cannot handle polysemy</h2></div>
+  <div class="body mid">
+    <div class="note warn">
+      <p><code>"I sat on the river bank"</code> &rarr; same vector for <code>bank</code><br><code>"I withdrew cash from the bank"</code> &rarr; same vector for <code>bank</code></p>
+      <p><strong>One vector</strong>, averaging the river sense and the money sense into an incoherent blur.</p>
+    </div>
+    <p class="hint" style="margin-top:var(--gap)"><strong>FastText</strong> patches OOV by summing character n-grams, so <code>unhappiness</code> composes even if unseen. The polysemy problem stands.</p>
+    <div class="note good" style="margin-top:var(--gap)">
+      <h4>Why this matters historically</h4>
+      <p style="font-size:var(--big)">BERT produces <strong>contextual embeddings</strong> &mdash; the vector for <code>bank</code> is computed from the sentence it sits in. That single change ended the classical pipeline era.</p>
+    </div>
+  </div>
+</section>
+
+<section class="s" data-sec="11">
+  <div class="head"><div class="kick">11 &middot; Ordering</div><h2>The order is not arbitrary</h2></div>
+  <div class="body figwrap">
+    <svg class="fig" viewBox="0 0 900 570" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Pipeline flowchart"><g id="flowg"></g></svg>
+  </div>
+</section>
+
+<section class="s" data-sec="11">
+  <div class="head"><div class="kick">11 &middot; Ordering</div><h2>Four rules people get wrong</h2></div>
+  <div class="body cols2 mid">
+    <div class="card"><h4>POS before lemmatization</h4><p>Otherwise the lemmatizer guesses "noun" and <strong>quietly fails</strong>.</p></div>
+    <div class="card"><h4>NER before lowercasing</h4><p>Capitalization is NER's strongest feature. Lowercase first and you have thrown it away.</p></div>
+    <div class="card"><h4>Stopword removal after parsing</h4><p>A parser needs <code>the</code>, <code>of</code>, <code>in</code> to build a tree.</p></div>
+    <div class="card"><h4>Lemmatize, then remove stopwords</h4><p>So that inflected forms of stopwords are caught too.</p></div>
+  </div>
+</section>
+
+<section class="s" data-sec="11">
+  <div class="head"><div class="kick">11 &middot; Ordering</div><h2>What to skip, by task</h2></div>
+  <div class="body">
+    <div class="tw"><table>
+      <tr><th>Task</th><th>Skip</th></tr>
+      <tr><td>Sentiment analysis</td><td>Stopword removal &mdash; or at minimum keep the negations</td></tr>
+      <tr><td>Translation / summarization</td><td>Stopwords and stemming &mdash; you need real, complete words</td></tr>
+      <tr><td>Feeding a transformer</td><td><strong>Everything above.</strong> BERT and GPT want raw text; their own subword tokenizer handles it</td></tr>
+      <tr><td>Search indexing</td><td>Nothing &mdash; the full stack applies</td></tr>
+    </table></div>
+    <div class="note" style="margin-top:var(--gap)">
+      <h4>The big picture</h4>
+      <p>For LLMs this entire pipeline collapses into <em>one</em> step &mdash; subword tokenization &mdash; and the model learns morphology, syntax and entities implicitly. The classic stack still matters: interpretable, fast, no GPU, works on small data, and it is the standard interview and examination material.</p>
+    </div>
+  </div>
+</section>
+
+<section class="s" data-sec="12">
+  <div class="head"><div class="kick">12 &middot; Code</div><h2>The pipeline in spaCy &mdash; part 1</h2>
+    <p class="sub">Tokenization, POS tagging, lemmatization and NER all come out of one pass.</p></div>
+  <div class="body">
+    <pre>import spacy, nltk
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
 
@@ -862,86 +922,106 @@ for t in doc:
 
 <i># 6. NER  (before lowercasing!)</i>
 print([(e.text, e.label_) for e in doc.ents])
-<i># [('Satyaki','PERSON'), ('NLP','ORG'), ('Classroom Tech','ORG'), ('Bengaluru','GPE')]</i>
+<i># [('Satyaki','PERSON'), ('NLP','ORG'), ('Classroom Tech','ORG'), ('Bengaluru','GPE')]</i></pre>
+  </div>
+</section>
 
-<i># 3. Stopword removal + lemmatize</i>
+<section class="s" data-sec="12">
+  <div class="head"><div class="kick">12 &middot; Code</div><h2>The pipeline in spaCy &mdash; part 2</h2>
+    <p class="sub">Filtering, then the numbers.</p></div>
+  <div class="body">
+    <pre><i># 3. Stopword removal + lemmatize</i>
 sw = set(stopwords.words('english')) - {'not', 'no', "n't"}
 clean = [t.lemma_.lower() for t in doc
          if not t.is_punct and t.lemma_.lower() not in sw]
 
 <i># 7. Vectorization</i>
-corpus = ["I love NLP", "I love SQL", "NLP is fun fun fun"]
-tfidf  = TfidfVectorizer(ngram_range=(1, 2), min_df=1)
-X = tfidf.fit_transform(corpus)
-print(tfidf.get_feature_names_out())
-print(X.toarray().round(2))</pre>
-  <p><strong>Install:</strong></p>
-  <pre>pip install spacy nltk scikit-learn gensim
-python -m spacy download en_core_web_sm</pre>
+tfidf = TfidfVectorizer(ngram_range=(1, 2), min_df=1)
+X = tfidf.fit_transform(["I love NLP", "I love SQL", "NLP is fun fun fun"])</pre>
+    <div class="note" style="margin-top:var(--gap)">
+      <h4>Install</h4>
+      <p><code>pip install spacy nltk scikit-learn gensim</code> &nbsp;&middot;&nbsp; <code>python -m spacy download en_core_web_sm</code></p>
+    </div>
+  </div>
 </section>
 
-<section id="nltk">
-  <div class="sec-head"><div class="sec-no">13</div><h2>NLTK — Natural Language Toolkit</h2></div>
-  <p class="lede"><strong>NLTK</strong> stands for <strong>Natural Language Toolkit</strong>. It is the classic open-source Python library for NLP, created in 2001 by Steven Bird and Edward Loper at the University of Pennsylvania — originally as a <em>teaching</em> tool, which is why it remains the standard library in NLP courses.</p>
-  <div class="tw"><table>
-    <tr><th>Module</th><th>What it provides</th></tr>
-    <tr><td><code>nltk.tokenize</code></td><td>word and sentence tokenization</td></tr>
-    <tr><td><code>nltk.stem</code></td><td>Porter, Snowball, Lancaster stemmers + WordNet lemmatizer</td></tr>
-    <tr><td><code>nltk.corpus</code></td><td>stopword lists, WordNet, and ~100 built-in corpora (Brown, Gutenberg, Reuters, movie reviews)</td></tr>
-    <tr><td><code>nltk.tag</code></td><td>POS tagging</td></tr>
-    <tr><td><code>nltk.chunk</code></td><td>chunking and basic NER</td></tr>
-    <tr><td><code>nltk.parse</code></td><td>CFG and dependency parsers</td></tr>
-    <tr><td><code>nltk.sentiment</code></td><td>VADER, a rule-based sentiment analyzer</td></tr>
-  </table></div>
-  <pre>import nltk
+<section class="s" data-sec="13">
+  <div class="head"><div class="kick">13 &middot; NLTK</div><h2>Natural Language Toolkit</h2>
+    <p class="sub">Created 2001 by Steven Bird and Edward Loper at Penn &mdash; originally a <em>teaching</em> tool, which is why it is still the standard in NLP courses.</p></div>
+  <div class="body cols2">
+    <div class="tw"><table>
+      <tr><th>Module</th><th>What it provides</th></tr>
+      <tr><td><code>nltk.tokenize</code></td><td>word and sentence tokenization</td></tr>
+      <tr><td><code>nltk.stem</code></td><td>Porter, Snowball, Lancaster + WordNet lemmatizer</td></tr>
+      <tr><td><code>nltk.corpus</code></td><td>stopwords, WordNet, ~100 corpora</td></tr>
+      <tr><td><code>nltk.tag</code></td><td>POS tagging</td></tr>
+      <tr><td><code>nltk.chunk</code></td><td>chunking and basic NER</td></tr>
+      <tr><td><code>nltk.parse</code></td><td>CFG and dependency parsers</td></tr>
+      <tr><td><code>nltk.sentiment</code></td><td>VADER, rule-based sentiment</td></tr>
+    </table></div>
+    <div>
+      <pre>import nltk
 nltk.download('punkt')       <i># tokenizer models</i>
 nltk.download('stopwords')   <i># stopword lists</i>
 nltk.download('wordnet')     <i># lemmatizer database</i></pre>
-  <div class="note warn">
-    <h4>The step that trips everyone up</h4>
-    <p><code>nltk.download()</code> is mandatory the first time. NLTK ships the <em>code</em>, but the data files — models and corpora — download separately.</p>
+      <div class="note warn" style="margin-top:var(--gap)">
+        <h4>The step that trips everyone up</h4>
+        <p><code>nltk.download()</code> is mandatory the first time. NLTK ships the <em>code</em>; the data files download separately.</p>
+      </div>
+    </div>
   </div>
-  <h3>NLTK vs. spaCy</h3>
-  <div class="tw"><table>
-    <tr><th></th><th>NLTK</th><th>spaCy</th></tr>
-    <tr><td><strong>Built for</strong></td><td>Teaching, research, experimentation</td><td>Production</td></tr>
-    <tr><td><strong>Speed</strong></td><td>Slow</td><td>Fast (Cython)</td></tr>
-    <tr><td><strong>Style</strong></td><td>Many algorithms, you choose</td><td>One opinionated best algorithm</td></tr>
-    <tr><td><strong>NER</strong></td><td>Weak</td><td>Strong</td></tr>
-    <tr><td><strong>Best for</strong></td><td>Learning the pipeline stage by stage</td><td>Shipping an application</td></tr>
-  </table></div>
-  <p><strong>Rule of thumb:</strong> learn with NLTK, deploy with spaCy — and for anything transformer-based, use Hugging Face <code>transformers</code> instead of either.</p>
 </section>
 
-<section id="cold">
-  <div class="sec-head"><div class="sec-no">14</div><h2>Three things to be able to say cold</h2></div>
-  <p class="lede">Tap each card to reveal the answer.</p>
-  <div class="cards">
+<section class="s" data-sec="13">
+  <div class="head"><div class="kick">13 &middot; NLTK vs. spaCy</div><h2>Learn with one, ship with the other</h2></div>
+  <div class="body">
+    <div class="tw"><table>
+      <tr><th></th><th>NLTK</th><th>spaCy</th></tr>
+      <tr><td><strong>Built for</strong></td><td>Teaching, research, experimentation</td><td>Production</td></tr>
+      <tr><td><strong>Speed</strong></td><td>Slow</td><td>Fast (Cython)</td></tr>
+      <tr><td><strong>Style</strong></td><td>Many algorithms, you choose</td><td>One opinionated best algorithm</td></tr>
+      <tr><td><strong>NER</strong></td><td>Weak</td><td>Strong</td></tr>
+      <tr><td><strong>Best for</strong></td><td>Learning the pipeline stage by stage</td><td>Shipping an application</td></tr>
+    </table></div>
+    <div class="note" style="margin-top:var(--gap)"><p><strong>Rule of thumb:</strong> learn with NLTK, deploy with spaCy &mdash; and for anything transformer-based, use Hugging Face <code>transformers</code> instead of either.</p></div>
+  </div>
+</section>
+
+<section class="s" data-sec="14">
+  <div class="head"><div class="kick">14 &middot; Revision</div><h2>Three things to be able to say cold</h2>
+    <p class="sub">Click each card to reveal.</p></div>
+  <div class="body cols3">
     <div class="flip"><b>Stemming vs. lemmatization</b>
-      <p class="q">What is the difference, in one breath?<span class="tap">Tap to reveal</span></p>
-      <p class="a">Stemming chops with rules and may not produce a real word; lemmatization looks up a dictionary using the POS tag and always returns a valid word.<span class="tap">Tap to hide</span></p>
-    </div>
+      <p class="q">What is the difference, in one breath?<span class="tap">Click to reveal</span></p>
+      <p class="a">Stemming chops with rules and may not produce a real word; lemmatization looks up a dictionary using the POS tag and always returns a valid word.<span class="tap">Click to hide</span></p></div>
     <div class="flip"><b>TF-IDF</b>
-      <p class="q">Why does it need no stoplist?<span class="tap">Tap to reveal</span></p>
-      <p class="a">It weights a term by how rare it is across the corpus, which automatically suppresses stopwords without an explicit stoplist.<span class="tap">Tap to hide</span></p>
-    </div>
+      <p class="q">Why does it need no stoplist?<span class="tap">Click to reveal</span></p>
+      <p class="a">It weights a term by how rare it is across the corpus, which automatically suppresses stopwords without an explicit stoplist.<span class="tap">Click to hide</span></p></div>
     <div class="flip"><b>Embeddings</b>
-      <p class="q">What did they fix, and what did they not?<span class="tap">Tap to reveal</span></p>
-      <p class="a">They replaced sparse one-hot / BoW vectors with dense ones where distance means semantic similarity; but <em>static</em> embeddings cannot handle polysemy, which is exactly what contextual Transformer embeddings fixed.<span class="tap">Tap to hide</span></p>
-    </div>
+      <p class="q">What did they fix, and what did they not?<span class="tap">Click to reveal</span></p>
+      <p class="a">They replaced sparse one-hot / BoW vectors with dense ones where distance means semantic similarity; but static embeddings cannot handle polysemy &mdash; which contextual Transformer embeddings fixed.<span class="tap">Click to hide</span></p></div>
   </div>
 </section>
 
-
-<section id="words">
-  <div class="sec-head"><div class="sec-no">DECODER</div><h2>Every term on this page, in plain English</h2></div>
-  <p class="lede">Every term used anywhere on this page, in alphabetical order. Each one is also marked with a dotted underline where it first appears, and listed again at the foot of the section it belongs to.</p>
-  <div class="gloss" id="glossbox"></div>
+<section class="s" data-sec="14">
+  <div class="head"><div class="kick">End</div></div>
+  <div class="body center">
+    <p class="quote">raw text &rarr; clean text &rarr; tokens &rarr; normalized tokens &rarr; filtered tokens &rarr; <em>numbers</em></p>
+    <p class="lead" style="margin-top:var(--gap)">Tokenization &middot; stemming and lemmatization &middot; stopword removal &middot; POS tagging &middot; parsing &middot; NER &middot; vectorization from Bag-of-Words through TF-IDF to Word2Vec and GloVe.</p>
+    <div class="by">Press N for the scrollable notes &middot; &larr; &rarr; to review</div>
+  </div>
 </section>
 
-<footer>
-  <b>Classic NLP pipeline study notes</b> — tokenization, stemming and lemmatization, stopword removal, POS tagging, parsing, NER, and vectorization from Bag-of-Words through TF-IDF to Word2Vec and GloVe.
-  <div class="lastline">Built from the lecture notes &middot; every widget on this page computes live in your browser.</div>
+</div>
+</main>
+
+<footer class="bot">
+  <button class="nav-b" id="prev" title="Previous (&larr;)">&#8249;</button>
+  <button class="nav-b" id="next" title="Next (&rarr;)">&#8250;</button>
+  <span class="count" id="count"></span>
+  <span class="prog"><i id="progi"></i></span>
+  <span class="where" id="where"></span>
+  <span class="keys">&larr; &rarr; move &middot; F full screen &middot; N notes &middot; Home / End</span>
 </footer>
 </div>
 
@@ -1176,7 +1256,6 @@ function stem(w){
   return s;
 }
 </script>
-
 <script>
 /* ===================== THE MACHINE ===================== */
 const STAGES = [
@@ -1513,7 +1592,6 @@ autogrow();
 $('#inp').oninput = () => render();
 render();
 </script>
-
 <script>
 /* ===================== BPE ===================== */
 let bpeW = [], bpeM = [];
@@ -1619,7 +1697,6 @@ $('#vec-toggle').onclick = () => { tfidfMode = !tfidfMode; vecRender(); };
 ['#d1','#d2','#d3'].forEach(s => $(s).oninput = vecRender);
 vecRender();
 </script>
-
 <script>
 /* ===================== EMBEDDING SPACE ===================== */
 const VEC = {
@@ -1801,379 +1878,86 @@ const AR = '<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWi
   document.getElementById('flowg').innerHTML = g;
 })();
 
-/* ===================== page chrome ===================== */
-document.querySelectorAll('.flip').forEach(c => c.onclick = () => c.classList.toggle('open'));
-const links = [...document.querySelectorAll('#nav a')];
-const io = new IntersectionObserver(es => {
-  es.forEach(e => {
-    if(!e.isIntersecting) return;
-    links.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id));
-    const on = document.querySelector('#nav a.on'), nav = document.getElementById('nav');
-    /* scroll the nav strip only — never scrollIntoView, which would move the page
-       under the reader and fight the wheel */
-    if(on && nav.scrollWidth > nav.clientWidth)
-      nav.scrollTo({ left: Math.max(0, on.offsetLeft - (nav.clientWidth - on.offsetWidth) / 2), behavior:'smooth' });
-  });
-}, { rootMargin: '-64px 0px -70% 0px' });
-document.querySelectorAll('section').forEach(s => io.observe(s));
 </script>
 
+<style>.sref{pointer-events:none; opacity:.85}</style>
 <script>
-/* =====================================================================
-   Infographics: the ladder, and three explain-it-simply figures.
-   All built from the same pipeline functions, so they cannot drift
-   out of step with what the live demos show.
-   ===================================================================== */
-(function ladder(){
-  const host = document.getElementById('ladder');
-  if(!host) return;
-  const raw  = "Satyaki was teaching NLP classes at Classroom Tech in Bengaluru, and the students weren't loving it.";
-  const norm = normalize(raw, { lower:false, contract:true });
-  const toks = tokenize(norm), tags = posTag(toks), spans = ner(toks);
-  const bio  = toks.map(() => 'O');
-  spans.forEach(sp => { for(let i = sp.start; i < sp.end; i++) bio[i] = (i === sp.start ? 'B-' : 'I-') + ABBR(sp.type); });
-  const lem  = toks.map((t, i) => lemmatize(t, tags[i]));
-  const drop = lem.map((l, i) => isPunct(toks[i]) || STOP.has(l.toLowerCase()));
-  const kept = lem.filter((l, i) => !drop[i]).map(x => x.toLowerCase());
-  const counts = {}; kept.forEach(w => counts[w] = (counts[w] || 0) + 1);
-  const changed = lem.filter((l, i) => l.toLowerCase() !== toks[i].toLowerCase()).length;
-  const entries = Object.entries(counts).sort((a, b) => a[0].localeCompare(b[0]));
+/* ===================== deck navigation ===================== */
+const SECS = ['Start','What NLP is','Why a pipeline exists','Text normalization','Tokenization',
+  'Stemming vs. lemmatization','Stopword removal','POS tagging','Parsing','NER','Vectorization',
+  'Pipeline ordering','The code','NLTK','Revision'];
+const slides = [...document.querySelectorAll('.s')];
+const chipBox = document.getElementById('chips');
+let idx = 0;
 
-  const rows = [
-    ['You write this', 'plain English', '<div class="raw">' + esc(raw) + '</div>',
-     '<b>' + raw.length + '</b> characters &middot; the computer sees a row of letters, nothing more'],
-    ['Clean it up', '&sect;3 normalize', '<div class="raw">' + esc(norm) + '</div>',
-     'Contractions opened out: <code>weren’t</code> became <code>were not</code>, so the <b>not</b> is now visible'],
-    ['Cut into pieces', '&sect;4 tokenize', chips(toks.map(t => tk(t, isPunct(t) ? 'chg' : ''))),
-     '<b>' + toks.length + '</b> tokens &middot; punctuation is separated from words'],
-    ['Label each piece', '&sect;7 POS tag', chips(toks.map((t, i) => tk(t, 'chg', tags[i]))),
-     'Every word now carries its job in the sentence'],
-    ['Find the names', '&sect;9 NER', chips(toks.map((t, i) => tk(t, bio[i] === 'O' ? '' : 'ent', bio[i] === 'O' ? '' : bio[i]))),
-     '<b>' + spans.length + '</b> names found: ' + spans.map(x => esc(x.text) + ' <i>(' + x.type + ')</i>').join(' &middot; ')],
-    ['Reduce to base words', '&sect;5 lemmatize', chips(lem.map((l, i) => tk(l, l.toLowerCase() !== toks[i].toLowerCase() ? 'chg' : ''))),
-     '<b>' + changed + '</b> words changed &mdash; <code>was</code>/<code>were</code> both became <code>be</code>, so they share one column'],
-    ['Drop the filler', '&sect;6 stopwords', chips(lem.map((l, i) => tk(l, drop[i] ? 'del' : 'add'))),
-     '<b>' + kept.length + '</b> kept, <b>' + (toks.length - kept.length) + '</b> thrown away &mdash; ' +
-     Math.round((toks.length - kept.length) / toks.length * 100) + '% of the sentence is gone'],
-    ['Count what is left', '&sect;10 vectorize',
-     chips(entries.map(e => tk(e[0], 'add', e[1] + '×'))) +
-     '<div class="raw" style="margin-top:8px"><code>[' + entries.map(e => e[1]).join(', ') + ']</code></div>',
-     '<b>' + entries.length + '</b> numbers. This is what the model actually learns from.']
-  ];
-  host.innerHTML = rows.map((r, i) =>
-    '<div class="lrow"><div class="lhead"><i>' + i + '</i><b>' + r[0] + '</b><span>' + r[1] + '</span></div>' +
-    '<div class="lbody">' + r[2] + '<div class="lcount">' + r[3] + '</div></div></div>').join('');
-})();
+const firstOf = {};
+slides.forEach((s, n) => { const k = s.dataset.sec; if(!(k in firstOf)) firstOf[k] = n; });
+chipBox.innerHTML = Object.keys(firstOf).map(k =>
+  '<button class="chip" data-go="' + firstOf[k] + '" data-sec="' + k + '">' +
+  (k === '0' ? 'Start' : k + ' ' + SECS[+k]) + '</button>').join('');
+chipBox.querySelectorAll('.chip').forEach(c => c.onclick = () => show(+c.dataset.go));
 
-/* ---- helpers for the hand-drawn figures ---- */
-const F = {
-  box: (x, y, w, h, fill, stroke, r) => '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="' + (r || 4) +
-       '" fill="' + fill + '" stroke="' + stroke + '"/>',
-  txt: (x, y, t, o) => { o = o || {}; return '<text x="' + x + '" y="' + y + '" text-anchor="' + (o.a || 'middle') +
-       '" font-size="' + (o.s || 15) + '" font-weight="' + (o.b ? 'bold' : 'normal') + '" fill="' + (o.f || '#0D1117') + '">' + t + '</text>'; },
-  arrow: (x1, y1, x2, y2) => '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 +
-       '" stroke="#6B7686" stroke-width="1.6" marker-end="url(#fa)"/>',
-  defs: '<defs><marker id="fa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">' +
-        '<path d="M0 0 L10 5 L0 10 z" fill="#6B7686"/></marker></defs>'
-};
-const word = (x, y, t, kind) => {
-  const w = Math.max(54, t.length * 9.5 + 20);
-  const c = kind === 'keep' ? ['#DDEFE8', '#AFD6C6', '#0D1117'] : kind === 'drop' ? ['#FBE7E1', '#EFC0B2', '#8C2712']
-          : kind === 'new' ? ['#E8EEFB', '#B9C8EC', '#0D1117'] : ['#F7F9FC', '#DCE3EB', '#0D1117'];
-  return F.box(x - w / 2, y - 15, w, 30, c[0], c[1]) + F.txt(x, y + 5, t, { f: c[2] }) +
-    (kind === 'drop' ? '<line x1="' + (x - w / 2 + 6) + '" y1="' + y + '" x2="' + (x + w / 2 - 6) + '" y2="' + y + '" stroke="#8C2712" stroke-width="1.4"/>' : '');
-};
-
-/* ---- stemming vs lemmatization ---- */
-(function(){
-  const el = document.getElementById('fig-stem'); if(!el) return;
-  let g = F.defs;
-  g += F.box(0, 0, 440, 230, '#FFFFFF', '#DCE3EB', 6);
-  g += F.box(460, 0, 440, 230, '#FFFFFF', '#DCE3EB', 6);
-  g += F.txt(220, 30, 'STEMMING &mdash; cut the ending off', { b:1, s:13, f:'#8C2712' });
-  g += F.txt(680, 30, 'LEMMATIZATION &mdash; look it up', { b:1, s:13, f:'#0E4B37' });
-  /* scissors */
-  g += '<g stroke="#8C2712" stroke-width="2" fill="none"><circle cx="196" cy="86" r="7"/><circle cx="196" cy="110" r="7"/>' +
-       '<line x1="202" y1="92" x2="242" y2="110"/><line x1="202" y1="104" x2="242" y2="86"/></g>';
-  g += word(110, 98, 'studies');
-  g += F.arrow(150, 98, 182, 98);
-  g += F.arrow(250, 98, 290, 98);
-  g += word(340, 98, 'studi', 'new');
-  g += F.txt(220, 150, '"studi" is not a word &mdash; and that is allowed.', { s:13.5, f:'#4A5563' });
-  g += F.txt(220, 172, 'It is only a key, used to match', { s:13.5, f:'#4A5563' });
-  g += F.txt(220, 192, '"studies" and "studying" to each other.', { s:13.5, f:'#4A5563' });
-  /* book */
-  g += '<g fill="#DDEFE8" stroke="#0E4B37" stroke-width="1.8"><rect x="632" y="76" width="56" height="44" rx="3"/>' +
-       '<line x1="660" y1="76" x2="660" y2="120"/></g>';
-  g += word(560, 98, 'ran');
-  g += F.arrow(596, 98, 626, 98);
-  g += F.arrow(694, 98, 726, 98);
-  g += word(790, 98, 'run', 'keep');
-  g += F.txt(680, 150, 'A dictionary always returns a real word.', { s:13.5, f:'#4A5563' });
-  g += F.txt(680, 172, 'But it must be told the word is a verb &mdash;', { s:13.5, f:'#4A5563' });
-  g += F.txt(680, 192, 'which is why POS tagging comes first.', { s:13.5, f:'#4A5563' });
-  el.innerHTML = g;
-})();
-
-/* ---- stopword sieve ---- */
-(function(){
-  const el = document.getElementById('fig-sieve'); if(!el) return;
-  const ws = ['the', 'students', 'were', 'not', 'loving', 'it'];
-  const keepIt = w => !STOP.has(w);
-  let g = F.defs, x = 90;
-  ws.forEach(w => { g += word(x, 40, w); x += Math.max(54, w.length * 9.5 + 20) + 14; });
-  const right = x;
-  g += F.txt(right / 2, 78, 'every word falls onto the sieve', { s:12.5, f:'#6B7686' });
-  g += '<line x1="40" y1="100" x2="' + (right - 20) + '" y2="100" stroke="#0D1117" stroke-width="2.5" stroke-dasharray="26 16"/>';
-  g += F.txt(right + 40, 105, 'the stoplist', { a:'start', s:13, b:1, f:'#0D1117' });
-  let kx = 120, dx = 120;
-  ws.forEach(w => {
-    if(keepIt(w)){ g += word(kx, 165, w, 'keep'); kx += Math.max(54, w.length * 9.5 + 20) + 14; }
-    else { g += word(dx, 232, w, 'drop'); dx += Math.max(54, w.length * 9.5 + 20) + 14; }
-  });
-  g += F.txt(40, 165, 'KEPT', { a:'start', s:12, b:1, f:'#0E4B37' });
-  g += F.txt(40, 232, 'DROPPED', { a:'start', s:12, b:1, f:'#8C2712' });
-  g += F.txt(right + 40, 165, 'carry the meaning', { a:'start', s:13, f:'#4A5563' });
-  g += F.txt(right + 40, 232, 'in almost every sentence', { a:'start', s:13, f:'#4A5563' });
-  g += F.txt(right + 40, 250, 'so they tell you nothing', { a:'start', s:13, f:'#4A5563' });
-  g += '<rect x="' + (dx - 4) + '" y="212" width="2" height="0" fill="none"/>';
-  g += F.txt(120, 282, '⚠ "not" fell through with the filler — which is exactly how a sentiment model ends up saying the opposite.', { a:'start', s:13, f:'#8C2712' });
-  el.innerHTML = g;
-})();
-
-/* ---- one-hot vs embedding ---- */
-(function(){
-  const el = document.getElementById('fig-vec'); if(!el) return;
-  let g = F.defs;
-  g += F.txt(20, 26, 'ONE-HOT — one word costs 10,000 numbers', { a:'start', b:1, s:13, f:'#8C2712' });
-  g += F.txt(20, 46, 'cat =', { a:'start', s:14 });
-  for(let i = 0; i < 22; i++){
-    const on = i === 7;
-    g += F.box(70 + i * 27, 32, 23, 23, on ? '#0D1117' : '#F7F9FC', on ? '#0D1117' : '#DCE3EB', 3);
-    g += F.txt(81.5 + i * 27, 49, on ? '1' : '0', { s:12, f: on ? '#fff' : '#6B7686' });
-  }
-  g += F.txt(680, 49, '… 9,978 more zeros', { a:'start', s:13, f:'#6B7686' });
-  g += F.txt(20, 84, 'Nearly all of it is zero, and every word is exactly as far from every other word:', { a:'start', s:13.5, f:'#4A5563' });
-  g += F.txt(20, 104, 'cat is no closer to dog than it is to democracy. The vector knows nothing about meaning.', { a:'start', s:13.5, f:'#4A5563' });
-  g += '<line x1="20" y1="124" x2="880" y2="124" stroke="#DCE3EB"/>';
-  g += F.txt(20, 154, 'EMBEDDING — one word costs about 300 numbers', { a:'start', b:1, s:13, f:'#0E4B37' });
-  const vals = ['0.52', '-0.18', '0.91', '0.07', '-0.44', '0.33'];
-  g += F.txt(20, 176, 'cat =', { a:'start', s:14 });
-  vals.forEach((v, i) => { g += F.box(70 + i * 62, 160, 56, 23, '#DDEFE8', '#AFD6C6', 3); g += F.txt(98 + i * 62, 177, v, { s:12 }); });
-  g += F.txt(456, 177, '…', { a:'start', s:14, f:'#6B7686' });
-  g += F.txt(20, 212, 'Those numbers are coordinates. Similar words end up near each other:', { a:'start', s:13.5, f:'#4A5563' });
-  /* mini map */
-  g += F.box(520, 140, 360, 150, '#F7F9FC', '#DCE3EB', 5);
-  const pts = [['cat', 590, 200], ['dog', 625, 185], ['kitten', 578, 232], ['democracy', 800, 170], ['election', 820, 205]];
-  pts.forEach(pt => {
-    const near = pt[1] < 700;
-    g += '<circle cx="' + pt[1] + '" cy="' + pt[2] + '" r="6" fill="' + (near ? '#0E4B37' : '#8C2712') + '"/>';
-    g += F.txt(pt[1] + 11, pt[2] + 5, pt[0], { a:'start', s:13 });
-  });
-  g += '<circle cx="600" cy="205" r="52" fill="none" stroke="#0E4B37" stroke-dasharray="4 4"/>';
-  g += F.txt(700, 278, 'distance now means &ldquo;how related&rdquo;', { s:12.5, f:'#6B7686' });
-  el.innerHTML = g;
-})();
-</script>
-
-<style>
-/* ---------- every-term glossary layer ---------- */
-.g{border-bottom:1.5px dotted var(--nc); cursor:help; position:relative; outline:none}
-.g:hover,.g:focus{background:var(--nc-soft)}
-.g::after{
-  content:attr(data-d); position:absolute; left:0; top:calc(100% + 7px); z-index:30;
-  width:max-content; max-width:min(330px,70vw); background:var(--ink); color:#fff;
-  font-size:14px; font-weight:400; font-style:normal; line-height:1.45; letter-spacing:0;
-  padding:9px 12px; border-radius:4px; box-shadow:0 6px 18px rgba(13,17,23,.18);
-  display:none; pointer-events:none; text-transform:none; white-space:normal;
+function show(n, skipHash){
+  idx = Math.max(0, Math.min(slides.length - 1, n));
+  slides.forEach((s, k) => s.classList.toggle('on', k === idx));
+  const sec = slides[idx].dataset.sec;
+  chipBox.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.sec === sec));
+  const onChip = chipBox.querySelector('.chip.on');
+  if(onChip && chipBox.scrollWidth > chipBox.clientWidth)
+    chipBox.scrollTo({ left: Math.max(0, onChip.offsetLeft - (chipBox.clientWidth - onChip.offsetWidth) / 2), behavior:'smooth' });
+  document.getElementById('count').innerHTML = '<b>' + (idx + 1) + '</b> / ' + slides.length;
+  document.getElementById('pagenum').textContent = (idx + 1) + ' / ' + slides.length;
+  document.getElementById('progi').style.width = ((idx + 1) / slides.length * 100) + '%';
+  document.getElementById('where').textContent = sec === '0' ? '' : SECS[+sec];
+  document.getElementById('prev').disabled = idx === 0;
+  document.getElementById('next').disabled = idx === slides.length - 1;
+  slides[idx].querySelector('.body').scrollTop = 0;
+  if(window.autogrowInp) autogrowInp();   /* the box can only be measured once its slide is shown */
+  if(!skipHash) history.replaceState(null, '', '#' + (idx + 1));
 }
-/* display:none, not visibility:hidden — a hidden absolutely-positioned box
-   still counts towards the page width and pushed the phone layout sideways */
-.g:hover::after,.g:focus::after{display:block}
-.g.right::after{left:auto; right:0}
+document.getElementById('prev').onclick = () => show(idx - 1);
+document.getElementById('next').onclick = () => show(idx + 1);
+document.getElementById('fs').onclick = () => {
+  if(document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
+};
+document.addEventListener('keydown', e => {
+  const typing = e.target.matches('input, textarea, [contenteditable]');
+  const k = e.key;
+  if(typing && (k === 'ArrowLeft' || k === 'ArrowRight' || k === ' ' || k.length === 1)) return;
+  if(k === 'ArrowRight' || k === 'PageDown' || k === ' ') { e.preventDefault(); show(idx + 1); }
+  else if(k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); show(idx - 1); }
+  else if(k === 'Home') { e.preventDefault(); show(0); }
+  else if(k === 'End') { e.preventDefault(); show(slides.length - 1); }
+  else if(k === 'f' || k === 'F') document.getElementById('fs').click();
+  else if(k === 'n' || k === 'N') location.href = 'notes.html';
+});
+/* swipe */
+let tx = 0, ty = 0;
+const stage = document.getElementById('stage');
+stage.addEventListener('touchstart', e => { tx = e.changedTouches[0].clientX; ty = e.changedTouches[0].clientY; }, { passive:true });
+stage.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty;
+  if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.6) show(idx + (dx < 0 ? 1 : -1));
+}, { passive:true });
+document.querySelectorAll('.flip').forEach(c => c.onclick = () => c.classList.toggle('open'));
+document.querySelectorAll('.sref').forEach(a => a.addEventListener('click', e => e.preventDefault()));
 
-.words-here{margin:26px 0 0; border:1px solid var(--rule); border-radius:5px; background:var(--sheet); padding:16px 20px}
-.words-here .lbl{font-size:10.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); margin-bottom:12px}
-.words-here dl{display:grid; grid-template-columns:1fr 1fr; gap:9px 26px; margin:0}
-.words-here .wrow{display:grid; grid-template-columns:auto 1fr; gap:10px; align-items:baseline; padding-bottom:8px; border-bottom:1px solid var(--rule-soft)}
-.words-here dt{font-weight:700; font-size:15px; white-space:nowrap}
-.words-here dd{margin:0; font-size:14.5px; color:var(--ink-3); line-height:1.5}
-@media(max-width:820px){.words-here dl{grid-template-columns:1fr}}
-@media print{.g::after{display:none}}
-</style>
+/* scale the 1280x720 slide to fit the window, the way a projector does */
+const slidebox = document.getElementById('slidebox'), stageEl = document.getElementById('stage');
+function fit(){
+  const k = Math.min((stageEl.clientWidth - 28) / 1280, (stageEl.clientHeight - 28) / 720);
+  slidebox.style.transform = 'translate(-50%, -50%) scale(' + k + ')';
+  if(window.autogrowInp) autogrowInp();
+}
+window.addEventListener('resize', fit);
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+fit();
 
-<script>
-/* =====================================================================
-   One dictionary drives three things: the dotted terms in the prose,
-   the "words used here" panel under each section, and the full decoder
-   at the foot of the page. Add a term once and all three update.
-   ===================================================================== */
-const GLOSS = [
-  /* --- the field --- */
-  { t:'artificial intelligence', alt:['AI'], cs:['AI'], d:'Machines doing jobs that would normally need human thinking.' },
-  { t:'natural language processing', alt:['NLP'], cs:['NLP'], d:'Teaching computers to work with ordinary human language — English, Hindi, Bengali — instead of code.' },
-  { t:'machine learning', d:'Letting a program discover patterns from examples, instead of a person writing every rule by hand.' },
-  { t:'model', alt:['models'], d:'A program that has already learned patterns from examples, and can now make a decision about something new.' },
-  { t:'training', alt:['trained','train'], d:'Showing a model thousands of examples so it can work out the patterns for itself.' },
-  { t:'algorithm', alt:['algorithms'], d:'A fixed list of steps a computer follows to get a job done.' },
-  { t:'library', alt:['libraries'], d:'Ready-made code somebody else wrote that you import and use, instead of writing it yourself.' },
-  { t:'GPU', cs:['GPU'], d:'A specialised chip, originally for graphics, that makes big models train far faster than an ordinary processor.' },
-  { t:'probability', alt:['probabilities'], d:'How likely something is, written as a number between 0 (never) and 1 (certain).' },
-  { t:'statistical', d:'Based on counting what actually happens in real data, rather than on hand-written rules.' },
-
-  /* --- the data --- */
-  { t:'corpus', alt:['corpora'], d:'All the text you are working with, taken together — for example 10,000 product reviews.' },
-  { t:'document', alt:['documents'], d:'One single piece of text inside the corpus: one review, one email, one article.' },
-  { t:'unstructured', d:'Not arranged in neat rows and columns. A paragraph is unstructured; a spreadsheet is not.' },
-  { t:'token', alt:['tokens'], d:'One piece of text after cutting — usually a word, sometimes a punctuation mark or part of a word.' },
-  { t:'tokenization', alt:['tokenize','tokenizer','tokenizers','tokenized'], d:'Cutting a sentence into those pieces. The first real stage of the pipeline.' },
-  { t:'vocabulary', alt:['vocab'], d:'The list of every different word the machine has seen. Each one becomes a column of numbers.' },
-  { t:'feature', alt:['features'], d:'One measurable fact about a text that a model can use — for example how many times the word "free" appears.' },
-  { t:'feature matrix', d:'The big table of those facts: one row per document, one column per word.' },
-  { t:'clitic', alt:['clitics'], d:'A shortened word stuck onto another one, like the n’t inside "weren’t".' },
-  { t:'Unicode', cs:['Unicode'], d:'The worldwide standard that gives every character in every language its own code number.' },
-  { t:'regex', alt:['regular expression','regular expressions'], d:'A short pattern used to find or replace text, like "any word ending in -ing".' },
-
-  /* --- words and grammar --- */
-  { t:'stem', alt:['stems','stemming','stemmer','stemmers'], d:'What is left after chopping the ending off a word. It may not be a real word — studies becomes studi.' },
-  { t:'lemma', alt:['lemmas','lemmatization','lemmatizer','lemmatize'], d:'The dictionary form of a word. Both ran and running have the lemma run.' },
-  { t:'inflected', alt:['inflection','inflections'], d:'A changed form of the same word: run, runs, running, ran.' },
-  { t:'morphology', d:'How words are built out of smaller parts — un + happy + ness.' },
-  { t:'syntax', alt:['syntactic'], d:'The grammar rules about how words fit together to make a sentence.' },
-  { t:'semantics', alt:['semantic'], d:'Meaning — what the words actually say, as opposed to how they are arranged.' },
-  { t:'ambiguous', alt:['ambiguity'], d:'Having more than one possible reading. Most of the difficulty in this subject lives here.' },
-  { t:'context', d:'The words surrounding a word, which is usually what tells you which meaning is intended.' },
-  { t:'stopword', alt:['stopwords','stoplist'], d:'A very common word like the, is or and that appears everywhere and so tells you nothing about the topic.' },
-  { t:'part-of-speech', alt:['part of speech','POS'], cs:['POS'], d:'A word’s grammatical job: noun, verb, adjective, and so on.' },
-  { t:'tagset', d:'The fixed list of short codes a tagger is allowed to use — NN for noun, VBD for a past-tense verb.' },
-  { t:'Penn Treebank', cs:['Penn Treebank'], d:'The standard tagset almost everyone uses, named after the university that built it.' },
-  { t:'gerund', d:'The -ing form of a verb used as a word in its own right: teaching, running.' },
-  { t:'determiner', alt:['determiners'], d:'A small word that introduces a noun: the, a, this, those.' },
-  { t:'sequence labeling', d:'Choosing a label for every word in order, using the neighbouring words to decide — not looking each word up on its own.' },
-
-  /* --- models and methods --- */
-  { t:'HMM', alt:['Hidden Markov Model'], cs:['HMM'], d:'A statistical method that picks the most likely whole chain of tags for a sentence, rather than each tag separately.' },
-  { t:'Viterbi', cs:['Viterbi'], d:'The clever shortcut that finds that most likely chain quickly, instead of trying every combination.' },
-  { t:'CRF', alt:['Conditional Random Fields'], cs:['CRF'], d:'A later tagger than the HMM that can weigh many clues at once — capital letters, word endings, neighbours.' },
-  { t:'neural', alt:['neural network','neural networks'], d:'A model made of layers of numbers that are adjusted over and over until its answers match the examples.' },
-  { t:'RNN', alt:['LSTM','BiLSTM'], cs:['RNN','LSTM','BiLSTM'], d:'Older neural models that read a sentence one word at a time, carrying a memory along as they go.' },
-  { t:'Transformer', alt:['Transformers'], cs:['Transformer','Transformers'], d:'The model design behind BERT and GPT. It looks at the whole sentence at once, so every word is understood in context.' },
-  { t:'BERT', cs:['BERT'], d:'A large model from Google, trained on huge amounts of text, that gives every word a meaning based on its sentence.' },
-  { t:'GPT', cs:['GPT'], d:'A large model trained to predict the next word; the family behind today’s chat assistants.' },
-  { t:'fine-tuned', alt:['fine-tuning','fine-tune'], d:'Taking a model that already learned general language and training it a little more on your specific job.' },
-  { t:'baseline', d:'The simple method you compare everything else against. If your clever idea cannot beat it, it is not clever.' },
-  { t:'overfits', alt:['overfit','overfitting'], d:'Learning the training examples so exactly that anything new confuses the model.' },
-  { t:'classification', alt:['classifier','classify'], d:'Sorting things into named groups — spam or not spam, positive or negative.' },
-  { t:'sentiment', d:'Whether a piece of writing is positive or negative about something.' },
-  { t:'softmax', d:'A step that turns a pile of raw scores into probabilities that add up to 1.' },
-  { t:'logistic regression', d:'One of the simplest learning methods for sorting things into two groups. Fast, and surprisingly hard to beat.' },
-  { t:'F1', cs:['F1'], d:'A score out of 100 that balances how much the system found against how often it was right.' },
-
-  /* --- parsing --- */
-  { t:'parsing', alt:['parse','parser','parsers','parses'], d:'Working out how the words in a sentence are connected — who did what to whom.' },
-  { t:'constituency', d:'A way of parsing that groups words into phrases, and phrases into bigger phrases.' },
-  { t:'dependency', alt:['dependencies'], d:'A way of parsing where every word points to the one word it hangs off.' },
-  { t:'head', d:'The word that another word depends on. In "NLP classes", classes is the head.' },
-  { t:'noun phrase', alt:['NP','verb phrase','VP'], cs:['NP','VP'], d:'A group of words that acts as a single noun (or verb) inside the sentence.' },
-  { t:'Context-Free Grammar', alt:['CFG','PCFG'], cs:['CFG','PCFG'], d:'A set of rules saying which phrases may contain which other phrases — the same idea a compiler uses on code.' },
-
-  /* --- names --- */
-  { t:'Named Entity Recognition', alt:['NER'], cs:['NER'], d:'Finding the names in a text and saying what kind each one is: person, company, city, date, money.' },
-  { t:'entity', alt:['entities'], d:'A named thing in the text — a person, an organization, a place, a date or an amount.' },
-  { t:'gazetteer', d:'A ready-made list of known names. Useful, but it can never contain the names invented tomorrow.' },
-  { t:'BIO', alt:['IOB'], cs:['BIO','IOB'], d:'The B / I / O labels that mark where a name Begins, where it continues Inside, and which words are Outside any name.' },
-  { t:'PII', cs:['PII'], d:'Personally Identifiable Information — details that could identify a real person, often removed for privacy.' },
-
-  /* --- numbers --- */
-  { t:'vectorization', alt:['vectorize','vectorizer'], d:'Turning text into lists of numbers, so that a model can finally do arithmetic on it.' },
-  { t:'vector', alt:['vectors'], d:'A list of numbers, like [1, 0, 3]. Producing one of these is the whole point of the pipeline.' },
-  { t:'dimension', alt:['dimensions','dimensional'], d:'One slot in a list of numbers. A 300-dimensional vector is a list of 300 numbers.' },
-  { t:'sparse', alt:['sparsity'], d:'A list of numbers that is almost entirely zeros — wasteful, but easy to build.' },
-  { t:'dense', d:'A short list in which every number carries information. Harder to build, far more useful.' },
-  { t:'One-Hot', alt:['one-hot'], d:'A vector of all zeros with a single 1, marking which word it is and nothing else.' },
-  { t:'Bag of Words', alt:['BoW','Bag-of-Words'], cs:['BoW'], d:'Counting how many times each word appears and ignoring the order — hence "bag".' },
-  { t:'n-gram', alt:['n-grams','bigrams','unigrams'], d:'A run of n words taken together. Keeping "not good" as one unit is what rescues negation.' },
-  { t:'TF-IDF', cs:['TF-IDF'], d:'A score that is high when a word is frequent in this document but rare across all the others — so common words score near zero.' },
-  { t:'smoothing', d:'Adding a small amount to a count so you never accidentally divide by zero.' },
-  { t:'L2-normalizes', alt:['L2-normalized','normalizes','normalized'], cs:[], d:'Scaling a list of numbers to a standard size, so a long document and a short one can be compared fairly.' },
-  { t:'embedding', alt:['embeddings'], d:'A short list of numbers that works like a position on a map of meaning, so similar words end up near each other.' },
-  { t:'cosine', alt:['cosine similarity'], d:'A measure of how closely two vectors point in the same direction: 1 means identical direction, 0 means unrelated.' },
-  { t:'polysemy', d:'One word with several different meanings — the river bank and the money bank.' },
-  { t:'distributional hypothesis', d:'The idea that words appearing in similar surroundings tend to mean similar things.' },
-  { t:'CBOW', alt:['Skip-gram'], cs:['CBOW','Skip-gram'], d:'The two ways Word2Vec can be trained: guess the middle word from its neighbours, or guess the neighbours from the middle word.' },
-  { t:'negative sampling', d:'A shortcut in training: instead of comparing against all 50,000 words, compare the right word against a few random wrong ones.' },
-  { t:'co-occurrence', d:'How often two words turn up near each other across the whole corpus.' },
-  { t:'Out-Of-Vocabulary', alt:['OOV'], cs:['OOV'], d:'A word the model never met while learning, so it has no column for it and its meaning is lost.' },
-  { t:'subword', alt:['subwords'], d:'A piece of a word — bigger than a letter, smaller than a word. un + happi + ness.' },
-  { t:'Byte Pair Encoding', alt:['BPE','WordPiece','SentencePiece'], cs:['BPE','WordPiece','SentencePiece'], d:'A way of building a subword vocabulary by repeatedly merging the commonest pair of neighbouring pieces.' },
-  { t:'FastText', cs:['FastText'], d:'A method that builds a word’s vector out of its letter groups, so it can handle words it has never seen.' },
-  { t:'contextual embeddings', d:'Word vectors calculated from the sentence a word sits in, so the same word can get different vectors in different sentences.' },
-  { t:'lexical database', alt:['WordNet'], cs:['WordNet'], d:'A dictionary built so a program can read it — it stores word meanings and how they relate.' }
-];
-
-(function glossify(){
-  /* longest first, so "cosine similarity" wins over "cosine" */
-  const entries = GLOSS.map(e => {
-    const forms = [e.t].concat(e.alt || []).sort((a, b) => b.length - a.length);
-    const esc = w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return { e, forms, re: new RegExp('(?<![\\w-])(' + forms.map(esc).join('|') + ')(?![\\w-])', 'i') };
-  }).sort((a, b) => b.forms[0].length - a.forms[0].length);
-
-  const SKIP = new Set(['PRE','CODE','SCRIPT','STYLE','H1','H2','H3','H4','H5','TH','BUTTON','INPUT','LABEL','SVG','TEXT','A']);
-  /* figures and live widgets are their own thing: their text is redrawn by script,
-     and a dotted underline inside a diagram label is just noise */
-  const SKIP_CLASS = ['plain','words-here','gloss','g','ladder','machine','funnel','stat','hint','tk','pill'];
-  const okCase = (e, hit) => !e.cs || !e.cs.length || e.cs.some(c => c === hit) || e.cs.every(c => c.toLowerCase() !== hit.toLowerCase());
-
-  document.querySelectorAll('section').forEach(sec => {
-    if(sec.id === 'words') return;
-    const used = [];
-    entries.forEach(({ e, re }) => {
-      const walker = document.createTreeWalker(sec, NodeFilter.SHOW_TEXT, {
-        acceptNode(n){
-          if(!n.nodeValue || !n.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
-          for(let p = n.parentElement; p && p !== sec; p = p.parentElement){
-            /* SVG tag names are lower-case and SVG cannot render an HTML span,
-               so anything inside a figure is off limits */
-            if(p.namespaceURI === 'http://www.w3.org/2000/svg') return NodeFilter.FILTER_REJECT;
-            if(SKIP.has(p.tagName.toUpperCase()) || SKIP_CLASS.some(c => p.classList.contains(c))) return NodeFilter.FILTER_REJECT;
-          }
-          return NodeFilter.FILTER_ACCEPT;
-        }
-      });
-      let node;
-      while((node = walker.nextNode())){
-        const m = re.exec(node.nodeValue);
-        if(!m || !okCase(e, m[1])) continue;
-        const span = document.createElement('span');
-        span.className = 'g';
-        span.tabIndex = 0;
-        span.dataset.d = e.d;
-        span.textContent = m[1];
-        const after = node.splitText(m.index);
-        after.nodeValue = after.nodeValue.slice(m[1].length);
-        after.parentNode.insertBefore(span, after);
-        used.push(e);
-        return;                       /* one mark per term per section */
-      }
-    });
-    if(!used.length) return;
-    const box = document.createElement('div');
-    box.className = 'words-here';
-    box.innerHTML = '<div class="lbl">Words used in this section</div><dl>' +
-      used.map(e => '<div class="wrow"><dt>' + e.t + '</dt><dd>' + e.d + '</dd></div>').join('') + '</dl>';
-    sec.appendChild(box);
-  });
-
-  /* tooltips near the right edge open leftwards */
-  document.querySelectorAll('.g').forEach(g => {
-    if(g.getBoundingClientRect().left > window.innerWidth * 0.55) g.classList.add('right');
-  });
-
-  /* the decoder at the foot of the page, generated from the same list */
-  const box = document.getElementById('glossbox');
-  if(box) box.innerHTML = GLOSS.slice().sort((a, b) => a.t.toLowerCase().localeCompare(b.t.toLowerCase()))
-    .map(e => '<div class="gterm"><b>' + e.t + (e.alt && e.alt.length ? ' <span style="color:var(--ink-4);font-weight:400">/ ' +
-      e.alt.slice(0, 2).join(' / ') + '</span>' : '') + '</b><span>' + e.d + '</span></div>').join('');
-})();
+const start = parseInt((location.hash || '').slice(1), 10);
+show(Number.isFinite(start) && start > 0 ? start - 1 : 0, true);
+window.addEventListener('hashchange', () => {
+  const n = parseInt((location.hash || '').slice(1), 10);
+  if(Number.isFinite(n) && n - 1 !== idx) show(n - 1, true);
+});
 </script>
