@@ -2,6 +2,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NLP Pipeline — Lecture Deck</title>
+<meta name="author" content="Educator Satyaki Das">
+<meta name="copyright" content="© 2026 Educator Satyaki Das">
 <meta name="description" content="The classic NLP pipeline as a lecture deck: tokenization to vectorization, with live demos on every stage.">
 
 <style>
@@ -131,6 +133,7 @@ svg text{font-family:var(--f)}
 .prog{flex:0 0 clamp(90px,22vw,320px); height:4px; background:var(--sheet-3); border-radius:2px; overflow:hidden}
 .prog i{display:block; height:100%; background:var(--nc); width:0; transition:width .2s}
 .keys{font-size:11px; color:var(--ink-4); white-space:nowrap}
+.copy{flex:0 0 auto; font-size:11px; color:var(--ink-4); white-space:nowrap}
 @media(max-width:760px){.keys{display:none} .brand span{display:none}}
 
 /* ---------- rules applied at this step ---------- */
@@ -234,7 +237,8 @@ svg text{font-family:var(--f)}
       <span class="pill">Stopwords</span><span class="pill">POS</span><span class="pill">Parsing</span>
       <span class="pill">NER</span><span class="pill">Vectorization</span>
     </div>
-    <div class="by">Use &larr; &rarr; to move &middot; press F for full screen</div>
+    <div class="by" style="margin-top:calc(var(--gap) * 1.4)">Educator Satyaki Das</div>
+    <div class="by" style="margin-top:6px">Use &larr; &rarr; to move &middot; press F for full screen</div>
   </div>
 </section>
 
@@ -1008,7 +1012,8 @@ nltk.download('wordnet')     <i># lemmatizer database</i></pre>
   <div class="body center">
     <p class="quote">raw text &rarr; clean text &rarr; tokens &rarr; normalized tokens &rarr; filtered tokens &rarr; <em>numbers</em></p>
     <p class="lead" style="margin-top:var(--gap)">Tokenization &middot; stemming and lemmatization &middot; stopword removal &middot; POS tagging &middot; parsing &middot; NER &middot; vectorization from Bag-of-Words through TF-IDF to Word2Vec and GloVe.</p>
-    <div class="by">Press N for the scrollable notes &middot; &larr; &rarr; to review</div>
+    <div class="by">&copy; 2026 Educator Satyaki Das</div>
+    <div class="by" style="margin-top:6px">Press N for the scrollable notes &middot; &larr; &rarr; to review</div>
   </div>
 </section>
 
@@ -1022,6 +1027,7 @@ nltk.download('wordnet')     <i># lemmatizer database</i></pre>
   <span class="prog"><i id="progi"></i></span>
   <span class="where" id="where"></span>
   <span class="keys">&larr; &rarr; move &middot; F full screen &middot; N notes &middot; Home / End</span>
+  <span class="copy">&copy; 2026 Educator Satyaki Das</span>
 </footer>
 </div>
 

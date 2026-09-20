@@ -70,3 +70,7 @@ you left off.
 
 The notes take `←` `→` too, stepping section by section, so they can be driven the same way.
 `S` opens the slides.
+
+## Copyright
+
+© 2026 Educator Satyaki Das. All rights reserved.
